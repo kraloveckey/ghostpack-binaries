@@ -1,0 +1,6 @@
+#!/bin/sh
+
+name_script=$(basename $0)
+tool_name=${name_script##responder-}
+
+exec /usr/share/responder/tools/$tool_name.py "$@"

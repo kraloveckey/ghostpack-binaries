@@ -1,0 +1,103 @@
+From: Arnaud Rebillout <arnaudr@kali.org>
+Date: Wed, 11 Sep 2024 10:13:39 +0700
+Subject: Fix various Python 3.12 SyntaxWarning
+
+```
+/usr/share/responder/tools/MultiRelay/RelayMultiCore.py:1957: SyntaxWarning: invalid escape sequence '\p'
+  Command          = "c:\\Windows\\Temp\\"+FileName+" \"rpc::server /protseq:ncacn_np /endpoint:\pipe\\"+NamedPipe+" /guid:{"+DisplayGUID+"} /noreg\" service::me exit"
+/usr/share/responder/tools/MultiRelay/impacket-dev/impacket/dcerpc/v5/transport.py:33: SyntaxWarning: invalid escape sequence '\['
+  +'([^\[]*)' # Network Address (opt.)
+/usr/share/responder/tools/MultiRelay/impacket-dev/impacket/dcerpc/v5/transport.py:34: SyntaxWarning: invalid escape sequence '\['
+  +'(?:\[([^\]]*)\])?') # Endpoint and options (opt.)
+/usr/share/responder/tools/MultiRelay/impacket-dev/impacket/hresult_errors.py:197: SyntaxWarning: invalid escape sequence '\<'
+  0x80004017: ("CO_E_RUNAS_SYNTAX", "A RunAs specification must be <domain name>\<user name> or simply <user name>."),
+/usr/share/responder/tools/MultiRelay/impacket-dev/impacket/hresult_errors.py:285: SyntaxWarning: invalid escape sequence '\<'
+  0x8001012C: ("CO_E_WRONGTRUSTEENAMESYNTAX", "One of the trustee strings provided by the user did not conform to the <Domain>\<Name> syntax and it was not the *\" string\"."),
+/usr/share/responder/tools/MultiRelay/impacket-dev/impacket/uuid.py:41: SyntaxWarning: invalid escape sequence '\d'
+  matches = re.match('([\dA-Fa-f]{8})-([\dA-Fa-f]{4})-([\dA-Fa-f]{4})-([\dA-Fa-f]{4})-([\dA-Fa-f]{4})([\dA-Fa-f]{8})', uuid)
+/usr/share/responder/tools/MultiRelay/impacket-dev/impacket/uuid.py:71: SyntaxWarning: invalid escape sequence '\.'
+  g =  re.search("([A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12}).*?([0-9]{1,5}\.[0-9]{1,5})",s+" 1.0")
+```
+
+Forwarded: https://github.com/lgandx/Responder/pull/290
+---
+ tools/MultiRelay/RelayMultiCore.py                            | 2 +-
+ tools/MultiRelay/impacket-dev/impacket/dcerpc/v5/transport.py | 6 +++---
+ tools/MultiRelay/impacket-dev/impacket/hresult_errors.py      | 4 ++--
+ tools/MultiRelay/impacket-dev/impacket/uuid.py                | 4 ++--
+ 4 files changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/tools/MultiRelay/RelayMultiCore.py b/tools/MultiRelay/RelayMultiCore.py
+index 4562ccf..4ce2055 100644
+--- a/tools/MultiRelay/RelayMultiCore.py
++++ b/tools/MultiRelay/RelayMultiCore.py
+@@ -1954,7 +1954,7 @@ def InstallMimiKatz(data, s, clientIP, Username, Domain, Command, Logs, Host, Fi
+         RandomFName      = GenerateRandomFileName()
+         WinTmpPath       = "%windir%\\Temp\\"+RandomFName+".txt"
+         #Install mimikatz as a service.
+-        Command          = "c:\\Windows\\Temp\\"+FileName+" \"rpc::server /protseq:ncacn_np /endpoint:\pipe\\"+NamedPipe+" /guid:{"+DisplayGUID+"} /noreg\" service::me exit"
++        Command          = "c:\\Windows\\Temp\\"+FileName+" \"rpc::server /protseq:ncacn_np /endpoint:\\pipe\\"+NamedPipe+" /guid:{"+DisplayGUID+"} /noreg\" service::me exit"
+         MimiKatzSVCName  = GenerateServiceName()
+         MimiKatzSVCID    = GenerateServiceID()
+         data,s           = SMBOpenPipe(Host, data, s)
+diff --git a/tools/MultiRelay/impacket-dev/impacket/dcerpc/v5/transport.py b/tools/MultiRelay/impacket-dev/impacket/dcerpc/v5/transport.py
+index 5c4f58a..8ce08ef 100644
+--- a/tools/MultiRelay/impacket-dev/impacket/dcerpc/v5/transport.py
++++ b/tools/MultiRelay/impacket-dev/impacket/dcerpc/v5/transport.py
+@@ -29,9 +29,9 @@ from impacket.smbconnection import SMBConnection
+ 
+ class DCERPCStringBinding:
+     parser = re.compile(r'(?:([a-fA-F0-9-]{8}(?:-[a-fA-F0-9-]{4}){3}-[a-fA-F0-9-]{12})@)?' # UUID (opt.)
+-                        +'([_a-zA-Z0-9]*):' # Protocol Sequence
+-                        +'([^\[]*)' # Network Address (opt.)
+-                        +'(?:\[([^\]]*)\])?') # Endpoint and options (opt.)
++                        +r'([_a-zA-Z0-9]*):' # Protocol Sequence
++                        +r'([^\[]*)' # Network Address (opt.)
++                        +r'(?:\[([^\]]*)\])?') # Endpoint and options (opt.)
+ 
+     def __init__(self, stringbinding):
+         match = DCERPCStringBinding.parser.match(stringbinding)
+diff --git a/tools/MultiRelay/impacket-dev/impacket/hresult_errors.py b/tools/MultiRelay/impacket-dev/impacket/hresult_errors.py
+index 7f7eb06..cfff9ba 100644
+--- a/tools/MultiRelay/impacket-dev/impacket/hresult_errors.py
++++ b/tools/MultiRelay/impacket-dev/impacket/hresult_errors.py
+@@ -194,7 +194,7 @@ ERROR_MESSAGES = {
+         0x80004014: ("CO_E_BAD_SERVER_NAME", "A Remote activation was necessary, but the server name provided was invalid."),
+         0x80004015: ("CO_E_WRONG_SERVER_IDENTITY", "The class is configured to run as a security ID different from the caller."),
+         0x80004016: ("CO_E_OLE1DDE_DISABLED", "Use of OLE1 services requiring Dynamic Data Exchange (DDE) Windows is disabled."),
+-        0x80004017: ("CO_E_RUNAS_SYNTAX", "A RunAs specification must be <domain name>\<user name> or simply <user name>."),
++        0x80004017: ("CO_E_RUNAS_SYNTAX", "A RunAs specification must be <domain name>\\<user name> or simply <user name>."),
+         0x80004018: ("CO_E_CREATEPROCESS_FAILURE", "The server process could not be started. The path name may be incorrect."),
+         0x80004019: ("CO_E_RUNAS_CREATEPROCESS_FAILURE", "The server process could not be started as the configured identity. The path name may be incorrect or unavailable."),
+         0x8000401A: ("CO_E_RUNAS_LOGON_FAILURE", "The server process could not be started because the configured identity is incorrect. Check the user name and password."),
+@@ -282,7 +282,7 @@ ERROR_MESSAGES = {
+         0x80010129: ("CO_E_FAILEDTOSETDACL", "Unable to set a discretionary access control list (ACL) into a security descriptor."),
+         0x8001012A: ("CO_E_ACCESSCHECKFAILED", "The system function AccessCheck returned false."),
+         0x8001012B: ("CO_E_NETACCESSAPIFAILED", "Either NetAccessDel or NetAccessAdd returned an error code."),
+-        0x8001012C: ("CO_E_WRONGTRUSTEENAMESYNTAX", "One of the trustee strings provided by the user did not conform to the <Domain>\<Name> syntax and it was not the *\" string\"."),
++        0x8001012C: ("CO_E_WRONGTRUSTEENAMESYNTAX", "One of the trustee strings provided by the user did not conform to the <Domain>\\<Name> syntax and it was not the *\" string\"."),
+         0x8001012D: ("CO_E_INVALIDSID", "One of the security identifiers provided by the user was invalid."),
+         0x8001012E: ("CO_E_CONVERSIONFAILED", "Unable to convert a wide character trustee string to a multiple-byte trustee string."),
+         0x8001012F: ("CO_E_NOMATCHINGSIDFOUND", "Unable to find a security identifier that corresponds to a trustee string provided by the user."),
+diff --git a/tools/MultiRelay/impacket-dev/impacket/uuid.py b/tools/MultiRelay/impacket-dev/impacket/uuid.py
+index 2aa3310..41171f8 100644
+--- a/tools/MultiRelay/impacket-dev/impacket/uuid.py
++++ b/tools/MultiRelay/impacket-dev/impacket/uuid.py
+@@ -38,7 +38,7 @@ def string_to_bin(uuid):
+ 
+     # If a UUID in the 00000000-0000-0000-0000-000000000000 format, parse it as Variant 2 UUID
+     # The first three components of the UUID are little-endian, and the last two are big-endian
+-    matches = re.match('([\dA-Fa-f]{8})-([\dA-Fa-f]{4})-([\dA-Fa-f]{4})-([\dA-Fa-f]{4})-([\dA-Fa-f]{4})([\dA-Fa-f]{8})', uuid)
++    matches = re.match(r'([\dA-Fa-f]{8})-([\dA-Fa-f]{4})-([\dA-Fa-f]{4})-([\dA-Fa-f]{4})-([\dA-Fa-f]{4})([\dA-Fa-f]{8})', uuid)
+     (uuid1, uuid2, uuid3, uuid4, uuid5, uuid6) = [int(x, 16) for x in matches.groups()]
+     uuid = pack('<LHH', uuid1, uuid2, uuid3)
+     uuid += pack('>HHL', uuid4, uuid5, uuid6)
+@@ -68,7 +68,7 @@ def bin_to_uuidtup(bin):
+ #           "10000000-2000-3000-4000-500000000000 v 3.0" returns ('00000000-0000-0000-0000-000000000000','3.0') 
+ #           "10000000-2000-3000-4000-500000000000" returns ('00000000-0000-0000-0000-000000000000','1.0') 
+ def string_to_uuidtup(s):
+-    g =  re.search("([A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12}).*?([0-9]{1,5}\.[0-9]{1,5})",s+" 1.0")
++    g =  re.search(r"([A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12}).*?([0-9]{1,5}\.[0-9]{1,5})",s+" 1.0")
+     if g: 
+         (u,v) = g.groups()
+         return (u,v)

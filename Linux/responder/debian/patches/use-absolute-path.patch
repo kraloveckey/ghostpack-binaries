@@ -1,0 +1,27 @@
+From: Sophie Brun <sophie@offensive-security.com>
+Date: Tue, 20 Aug 2019 16:47:22 +0200
+Subject: Use absolute path for import
+
+Last-Update: 2021-04-13
+
+Use a absolute path to find the module packets when we use the symbolic
+link in /usr/bin/
+---
+ tools/Icmp-Redirect.py | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/tools/Icmp-Redirect.py b/tools/Icmp-Redirect.py
+index 4949693..c07ad9a 100755
+--- a/tools/Icmp-Redirect.py
++++ b/tools/Icmp-Redirect.py
+@@ -20,8 +20,9 @@ import optparse
+ import pipes
+ import sys
+ import codecs
++import os
+ from socket import *
+-sys.path.append('../')
++sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+ from odict import OrderedDict
+ from random import randrange
+ from time import sleep

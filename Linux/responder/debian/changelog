@@ -1,0 +1,394 @@
+responder (3.1.5.0-0kali1) kali-dev; urgency=medium
+
+  * New upstream version 3.1.5.0
+  * Refresh patches
+  * Bump Standards-Version to 4.7.0 (no change)
+
+ -- Sophie Brun <sophie@offensive-security.com>  Thu, 26 Sep 2024 14:48:30 +0200
+
+responder (3.1.4.0-0kali2) kali-dev; urgency=medium
+
+  * Fix various Python 3.12 SyntaxWarning
+
+ -- Arnaud Rebillout <arnaudr@kali.org>  Wed, 11 Sep 2024 10:35:05 +0700
+
+responder (3.1.4.0-0kali1) kali-dev; urgency=medium
+
+  * New upstream version 3.1.4.0
+  * Refresh patches
+  * Update packaging
+
+ -- Daniel Ruiz de Alegría <daniruiz@kali.org>  Mon, 08 Jan 2024 13:51:52 +0100
+
+responder (3.1.3.0-0kali3) kali-dev; urgency=medium
+
+  * Add missing binaries (Runas.exe and Syssvc.exe)
+  * Patch Multirelay to use pycryptodome, not obsolte crypto
+
+ -- Sophie Brun <sophie@offensive-security.com>  Thu, 02 Feb 2023 17:36:36 +0100
+
+responder (3.1.3.0-0kali2) kali-dev; urgency=medium
+
+  * Fix autopkgtest (add aloow-stderr)
+
+ -- Sophie Brun <sophie@offensive-security.com>  Tue, 31 Jan 2023 15:52:43 +0100
+
+responder (3.1.3.0-0kali1) kali-dev; urgency=medium
+
+  * New upstream version 3.1.3.0
+  * Refresh patches
+
+ -- Sophie Brun <sophie@offensive-security.com>  Thu, 28 Jul 2022 15:00:50 +0200
+
+responder (3.1.2.0-0kali2) kali-dev; urgency=medium
+
+  * Add a patch to fix Import in Python 3.10
+
+ -- Sophie Brun <sophie@offensive-security.com>  Tue, 26 Apr 2022 10:58:24 +0200
+
+responder (3.1.2.0-0kali1) kali-dev; urgency=medium
+
+  * New upstream version 3.1.2.0
+  * Refresh patches
+
+ -- Sophie Brun <sophie@offensive-security.com>  Mon, 14 Feb 2022 12:30:37 +0100
+
+responder (3.1.1.0-0kali1) kali-dev; urgency=medium
+
+  * New upstream version 3.1.1.0
+  * Refresh patches
+  * Add missing dependency python3-netifaces
+
+ -- Sophie Brun <sophie@offensive-security.com>  Mon, 20 Dec 2021 15:39:58 +0100
+
+responder (3.0.9.0-0kali1) kali-dev; urgency=medium
+
+  * New upstream version 3.0.9.0
+
+ -- Sophie Brun <sophie@offensive-security.com>  Fri, 10 Dec 2021 09:02:31 +0100
+
+responder (3.0.8.0-0kali1) kali-dev; urgency=medium
+
+  [ Ben Wilson ]
+  * Update email address
+  * Add executable to helper-script
+  * New helper-script format
+  * Fix email address
+
+  [ Sophie Brun ]
+  * New upstream version 3.0.8.0
+  * Refresh patches
+  * Add missing depends
+  * Adapt debian/* for new usptream release
+  * Add autopkgtest
+  * Wrap-and-sort
+
+ -- Sophie Brun <sophie@offensive-security.com>  Fri, 03 Dec 2021 09:38:02 +0100
+
+responder (3.0.7.0-0kali1) kali-dev; urgency=medium
+
+  * New upstream version 3.0.7.0
+  * Refresh patches
+  * Bump Standards-Version to 4.6.0 (no change)
+  * Remove useless debian/source/lintian-overrides
+
+ -- Sophie Brun <sophie@offensive-security.com>  Tue, 26 Oct 2021 16:21:47 +0200
+
+responder (3.0.6.0-0kali2) kali-dev; urgency=medium
+
+  * Remove responder-FindSMB2UPTime (Dropped in 3.0.4.0)
+
+ -- Ben Wilson <g0tmi1k@kali.org>  Wed, 25 Aug 2021 12:16:30 +0100
+
+responder (3.0.6.0-0kali1) kali-dev; urgency=medium
+
+  * New upstream version 3.0.6.0
+
+ -- Sophie Brun <sophie@offensive-security.com>  Tue, 20 Apr 2021 09:14:58 +0200
+
+responder (3.0.5.0-0kali1) kali-dev; urgency=medium
+
+  * New upstream version 3.0.5.0
+
+ -- Sophie Brun <sophie@offensive-security.com>  Mon, 19 Apr 2021 12:07:15 +0200
+
+responder (3.0.4.0-0kali1) kali-dev; urgency=medium
+
+  * New upstream version 3.0.4.0
+  * Refresh patches
+
+ -- Sophie Brun <sophie@offensive-security.com>  Tue, 13 Apr 2021 11:44:23 +0200
+
+responder (3.0.3.0-0kali1) kali-dev; urgency=medium
+
+  [ Kali Janitor ]
+  * Update watch file format version to 4.
+
+  [ Sophie Brun ]
+  * New upstream version 3.0.3.0
+  * Refresh patches
+  * Bump Standards-Version to 4.5.1 (no changes)
+  * tools/MultiRelay/creddump has been removed
+  * Fix permissions
+  * Add a patch to fix shebangs
+
+ -- Sophie Brun <sophie@offensive-security.com>  Tue, 09 Feb 2021 08:32:08 +0100
+
+responder (3.0.2.0-0kali1) kali-dev; urgency=medium
+
+  [ Kali Janitor ]
+  * Wrap long lines in changelog entries: 3.0.1.0-0kali1.
+
+  [ Sophie Brun ]
+  * New upstream version 3.0.2.0
+
+ -- Sophie Brun <sophie@offensive-security.com>  Fri, 02 Oct 2020 15:19:12 +0200
+
+responder (3.0.1.0-0kali1) kali-dev; urgency=medium
+
+  [ Kali Janitor ]
+  * Trim trailing whitespace.
+  * Set upstream metadata fields: Bug-Database, Bug-Submit, Repository,
+    Repository-Browse.
+
+  [ Sophie Brun ]
+  * New upstream version 3.0.1.0
+  * Refresh patches
+
+ -- Sophie Brun <sophie@offensive-security.com>  Fri, 28 Aug 2020 11:19:00 +0200
+
+responder (3.0.0.0-0kali1) kali-dev; urgency=medium
+
+  [ Raphaël Hertzog ]
+  * Configure git-buildpackage for Kali
+  * Update URL in GitLab's CI configuration file
+
+  [ Sophie Brun ]
+  * New upstream version 3.0.0.0
+  * Switch to Python 3
+  * Refresh patches
+  * Add patches to fix syntax issues in Python3
+
+ -- Sophie Brun <sophie@offensive-security.com>  Fri, 21 Feb 2020 09:20:52 +0100
+
+responder (2.3.4.0-0kali1) kali-dev; urgency=medium
+
+  [ Raphaël Hertzog ]
+  * Add GitLab's CI configuration file
+
+  [ Sophie Brun ]
+  * New upstream version 2.3.4.0
+  * Refresh patches
+  * Bump Standards-Version to 4.4.0
+  * Add debian/source/lintian-overrides
+
+ -- Sophie Brun <sophie@offensive-security.com>  Tue, 20 Aug 2019 17:10:02 +0200
+
+responder (2.3.3.9-0kali3) kali-dev; urgency=medium
+
+  [ Sophie Brun ]
+  * Drop mention of python in debian/script
+
+  [ Raphaël Hertzog ]
+  * Update Maintainer field
+  * Update Vcs-* fields for the move to gitlab.com
+
+  [ Sophie Brun ]
+  * Fix autopkgtest
+  * Use debhelper-compat 12
+  * Add myself as uploaders
+  * Bump Standards-Version to 4.3.0
+  * Add debian/gbp.conf
+
+ -- Sophie Brun <sophie@offensive-security.com>  Thu, 27 Jun 2019 17:03:45 +0200
+
+responder (2.3.3.9-0kali2) kali-dev; urgency=medium
+
+  * Add tools/* into $PATH under the name responder-* (closes 4437)
+
+ -- Sophie Brun <sophie@offensive-security.com>  Tue, 30 Jan 2018 09:46:36 +0100
+
+responder (2.3.3.9-0kali1) kali-dev; urgency=medium
+
+  * Import new upstream release
+  * Refresh patch fix-version
+  * Bump to Standards Version 4.1.1
+
+ -- Sophie Brun <sophie@offensive-security.com>  Thu, 23 Nov 2017 10:49:16 +0100
+
+responder (2.3.3.8-0kali1) kali-dev; urgency=medium
+
+  * Import new upstream release
+  * Improve debian/control and debian/rules (build with python2)
+  * Add a patch to fix the version
+
+ -- Sophie Brun <sophie@offensive-security.com>  Tue, 05 Sep 2017 13:48:08 +0200
+
+responder (2.3.3.6-0kali2) kali-dev; urgency=medium
+
+  * Updated usage examples (Closes: 0004201)
+
+ -- Devon Kearns <dookie@kali.org>  Mon, 28 Aug 2017 11:24:24 -0600
+
+responder (2.3.3.6-0kali1) kali-dev; urgency=medium
+
+  * Import new upstream release
+
+ -- Sophie Brun <sophie@offensive-security.com>  Tue, 11 Apr 2017 14:24:03 +0200
+
+responder (2.3.3.5-0kali1) kali-dev; urgency=medium
+
+  * Import new upstream release
+
+ -- Sophie Brun <sophie@offensive-security.com>  Mon, 20 Feb 2017 14:10:27 +0100
+
+responder (2.3.3.3-0kali1) kali-dev; urgency=medium
+
+  * Import new upstream release
+
+ -- Sophie Brun <sophie@offensive-security.com>  Thu, 05 Jan 2017 11:33:42 +0100
+
+responder (2.3.3.1-0kali1) kali-dev; urgency=medium
+
+  * Import new upstream release
+
+ -- Sophie Brun <sophie@offensive-security.com>  Thu, 20 Oct 2016 15:21:08 +0200
+
+responder (2.3.3.0-0kali1) kali-dev; urgency=medium
+
+  * Import new upstream release
+
+ -- Sophie Brun <sophie@offensive-security.com>  Thu, 13 Oct 2016 15:20:33 +0200
+
+responder (2.3.2.8-0kali1) kali-dev; urgency=medium
+
+  * Import new upstream release
+
+ -- Sophie Brun <sophie@offensive-security.com>  Fri, 07 Oct 2016 14:36:28 +0200
+
+responder (2.3.2.7-0kali1) kali-dev; urgency=medium
+
+  * Import new upstream release
+
+ -- Sophie Brun <sophie@offensive-security.com>  Thu, 06 Oct 2016 12:08:22 +0200
+
+responder (2.3.2.5-0kali1) kali-dev; urgency=medium
+
+  * Import new upstream release
+
+ -- Sophie Brun <sophie@offensive-security.com>  Tue, 04 Oct 2016 14:18:08 +0200
+
+responder (2.3.2.4-0kali1) kali-dev; urgency=medium
+
+  * Import a new upstream release (from a new git source)
+  * debian/control: add dependency on net-tools
+
+ -- Sophie Brun <sophie@offensive-security.com>  Mon, 12 Sep 2016 13:31:12 +0200
+
+responder (2.3.0+git20160905-0kali1) kali-dev; urgency=medium
+
+  * Import a snapshot from git
+  * Drop the patch
+
+ -- Sophie Brun <sophie@offensive-security.com>  Mon, 05 Sep 2016 11:05:53 +0200
+
+responder (2.3.0-0kali3) kali-dev; urgency=medium
+
+  * Patch responder to use TLS instead of SSLv3 which is no longer available.
+    FS #3048.
+
+ -- Raphaël Hertzog <hertzog@debian.org>  Mon, 08 Feb 2016 12:09:42 +0100
+
+responder (2.3.0-0kali2) kali-dev; urgency=medium
+
+  * Drop dependency on python-support (obsolete package)
+
+ -- Sophie Brun <sophie@offensive-security.com>  Thu, 28 Jan 2016 16:21:04 +0100
+
+responder (2.3.0-0kali1) kali-dev; urgency=medium
+
+  * Import new upstream release
+  * Update debian/ files
+  * Add a helper-script
+  * Move the Responder.conf to /etc/responder/
+
+ -- Sophie Brun <sophie@offensive-security.com>  Mon, 12 Oct 2015 14:21:47 +0200
+
+responder (2.1.4-1kali1) kali; urgency=low
+
+  * Upstream update, SSL certificate fix
+
+ -- Mati Aharoni <muts@kali.org>  Fri, 01 May 2015 03:08:53 -0400
+
+responder (2.1.2-1kali1) kali; urgency=low
+
+  * Upstream Update
+
+ -- Jim O'Gorman <elwood@kali.org>  Sun, 12 Oct 2014 14:14:30 -0400
+
+responder (2.0.9-0kali1) kali; urgency=low
+
+  * Imported upstream release 2.0.9 (Closes: 0001416)
+
+ -- Devon Kearns <dookie@kali.org>  Tue, 24 Jun 2014 13:37:13 -0600
+
+responder (2.0.8-1kali1) kali; urgency=low
+
+  * Upstream update
+
+ -- Mati Aharoni <muts@kali.org>  Fri, 23 May 2014 09:08:53 -0400
+
+responder (2.0.4-0kali2) kali; urgency=low
+
+  * Upstream import
+  * Version bump
+
+ -- Mati Aharoni <muts@kali.org>  Sat, 22 Mar 2014 09:04:28 -0400
+
+responder (2.0.2-0kali1) kali; urgency=low
+
+  * Imported new upstream release (Closes: 0001017)
+
+ -- Devon Kearns <dookie@kali.org>  Fri, 07 Feb 2014 10:17:19 -0700
+
+responder (2.0.1-1kali0) kali; urgency=low
+
+  * Upstream update
+
+ -- Mati Aharoni <muts@kali.org>  Thu, 30 Jan 2014 16:07:39 -0500
+
+responder (1.9b-0kali0) kali; urgency=low
+
+  * Fix error in build process
+
+ -- Emanuele Acri <crossbower@kali.org>  Thu, 02 Jan 2014 13:52:44 +0100
+
+responder (1.9-0kali4) kali; urgency=low
+
+  * Upgrade (closes: 796)
+
+ -- Emanuele Acri <crossbower@kali.org>  Fri, 27 Dec 2013 21:51:31 +0100
+
+responder (1.9-0kali3) kali; urgency=low
+
+  * Add full path for config file
+
+ -- Mati Aharoni <muts@kali.org>  Sat, 07 Dec 2013 14:32:02 -0500
+
+responder (1.9-0kali2) kali; urgency=low
+
+  * Added missing responder.conf
+
+ -- Mati Aharoni <muts@kali.org>  Sat, 07 Dec 2013 10:31:30 -0500
+
+responder (1.9-0kali1) kali; urgency=low
+
+  * Upstream import
+
+ -- Mati Aharoni <muts@kali.org>  Fri, 29 Nov 2013 18:39:56 -0500
+
+responder (1.0-1kali0) kali; urgency=low
+
+  * Initial release
+
+ -- Devon Kearns <dookie@kali.org>  Sat, 16 Feb 2013 06:02:38 -0700

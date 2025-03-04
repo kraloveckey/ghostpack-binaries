@@ -1,0 +1,5 @@
+fix-usage-example
+use-absolute-path.patch
+change-shebang-to-python3.patch
+Use-pycryptodome-not-crypto.patch
+Fix-various-Python-3.12-SyntaxWarning.patch

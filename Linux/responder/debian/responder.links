@@ -1,0 +1,6 @@
+etc/responder/Responder.conf usr/share/responder/Responder.conf
+usr/share/responder/script usr/bin/responder-BrowserListener
+usr/share/responder/script usr/bin/responder-FindSQLSrv
+usr/share/responder/script usr/bin/responder-Icmp-Redirect
+usr/share/responder/script usr/bin/responder-MultiRelay
+usr/share/responder/script usr/bin/responder-RunFinger

@@ -1,0 +1,31 @@
+Source: responder
+Section: utils
+Priority: optional
+Maintainer: Kali Developers <devel@kali.org>
+Build-Depends: debhelper-compat (= 13), dh-python, python3-all, gcc-mingw-w64-x86-64
+Uploaders: Sophie Brun <sophie@offensive-security.com>
+Standards-Version: 4.7.0
+Homepage: https://github.com/lgandx/Responder
+Vcs-Git: https://gitlab.com/kalilinux/packages/responder.git
+Vcs-Browser: https://gitlab.com/kalilinux/packages/responder
+
+Package: responder
+Architecture: all
+Depends: net-tools,
+         python3-netifaces,
+         python3-pkg-resources,
+         python3-pycryptodome,
+         python3-six,
+         ${misc:Depends},
+         ${python3:Depends}
+Description: LLMNR/NBT-NS/mDNS Poisoner
+ This package contains Responder/MultiRelay,  an LLMNR, NBT-NS and MDNS
+ poisoner. It will answer to specific NBT-NS (NetBIOS Name Service) queries
+ based on their name suffix (see: http://support.microsoft.com/kb/163409). By
+ default, the tool will only answer to File Server Service request, which is for
+ SMB.
+ .
+ The concept behind this is to target your answers, and be stealthier on the
+ network. This also helps to ensure that you don't break legitimate NBT-NS
+ behavior. You can set the -r option via command line if you want to answer
+ to the Workstation Service request name suffix.

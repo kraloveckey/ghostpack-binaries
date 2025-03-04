@@ -1,0 +1,21 @@
+From: Sophie Brun <sophie@offensive-security.com>
+Date: Thu, 2 Feb 2023 16:34:54 +0100
+Subject: Use pycryptodome not crypto
+
+---
+ tools/MultiRelay.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tools/MultiRelay.py b/tools/MultiRelay.py
+index f666916..059b241 100755
+--- a/tools/MultiRelay.py
++++ b/tools/MultiRelay.py
+@@ -35,7 +35,7 @@ else:
+     from SocketServer import TCPServer, UDPServer, ThreadingMixIn, BaseRequestHandler
+ 
+ try:
+-    from Crypto.Hash import MD5
++    from Cryptodome.Hash import MD5
+ except ImportError:
+     print("\033[1;31m\nCrypto lib is not installed. You won't be able to live dump the hashes.")
+     print("You can install it on debian based os with this command: apt-get install python-crypto")

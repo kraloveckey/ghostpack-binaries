@@ -1,0 +1,390 @@
+From: Sophie Brun <sophie@offensive-security.com>
+Date: Tue, 9 Feb 2021 09:14:47 +0100
+Subject: Change shebang to python3
+
+In Debian /usr/bin/env python was used for python 2 only.
+Last-Update: 2021-12-20
+---
+ packets.py                                   | 2 +-
+ poisoners/DHCP.py                            | 2 +-
+ poisoners/LLMNR.py                           | 2 +-
+ poisoners/MDNS.py                            | 2 +-
+ poisoners/NBTNS.py                           | 2 +-
+ servers/Browser.py                           | 2 +-
+ servers/DNS.py                               | 2 +-
+ servers/FTP.py                               | 2 +-
+ servers/HTTP.py                              | 2 +-
+ servers/HTTP_Proxy.py                        | 2 +-
+ servers/IMAP.py                              | 2 +-
+ servers/Kerberos.py                          | 2 +-
+ servers/LDAP.py                              | 2 +-
+ servers/MQTT.py                              | 2 +-
+ servers/MSSQL.py                             | 2 +-
+ servers/POP3.py                              | 2 +-
+ servers/Proxy_Auth.py                        | 2 +-
+ servers/RDP.py                               | 2 +-
+ servers/RPC.py                               | 2 +-
+ servers/SMB.py                               | 2 +-
+ servers/SMTP.py                              | 2 +-
+ servers/SNMP.py                              | 2 +-
+ servers/WinRM.py                             | 2 +-
+ settings.py                                  | 2 +-
+ tools/BrowserListener.py                     | 2 +-
+ tools/DNSUpdate.py                           | 4 ++--
+ tools/FindSQLSrv.py                          | 2 +-
+ tools/Icmp-Redirect.py                       | 2 +-
+ tools/MultiRelay.py                          | 2 +-
+ tools/MultiRelay/RelayMultiCore.py           | 2 +-
+ tools/MultiRelay/RelayMultiPackets.py        | 2 +-
+ tools/MultiRelay/impacket-dev/secretsdump.py | 2 +-
+ tools/SMBFinger/Finger.py                    | 2 +-
+ utils.py                                     | 2 +-
+ 34 files changed, 35 insertions(+), 35 deletions(-)
+
+diff --git a/packets.py b/packets.py
+index bb3134e..eb0d256 100644
+--- a/packets.py
++++ b/packets.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # This file is part of Responder, a network take-over set of tools 
+ # created and maintained by Laurent Gaffie.
+ # email: laurent.gaffie@gmail.com
+diff --git a/poisoners/DHCP.py b/poisoners/DHCP.py
+index a0e1713..b96b1b7 100755
+--- a/poisoners/DHCP.py
++++ b/poisoners/DHCP.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # This file is part of Responder, a network take-over set of tools
+ # created and maintained by Laurent Gaffie.
+ # email: laurent.gaffie@gmail.com
+diff --git a/poisoners/LLMNR.py b/poisoners/LLMNR.py
+index 36fe7c3..f43daac 100755
+--- a/poisoners/LLMNR.py
++++ b/poisoners/LLMNR.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # This file is part of Responder, a network take-over set of tools 
+ # created and maintained by Laurent Gaffie.
+ # email: laurent.gaffie@gmail.com
+diff --git a/poisoners/MDNS.py b/poisoners/MDNS.py
+index 3ef0c7c..400ece1 100755
+--- a/poisoners/MDNS.py
++++ b/poisoners/MDNS.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # This file is part of Responder, a network take-over set of tools 
+ # created and maintained by Laurent Gaffie.
+ # email: laurent.gaffie@gmail.com
+diff --git a/poisoners/NBTNS.py b/poisoners/NBTNS.py
+index ff3a1cd..32b2c47 100755
+--- a/poisoners/NBTNS.py
++++ b/poisoners/NBTNS.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # This file is part of Responder, a network take-over set of tools 
+ # created and maintained by Laurent Gaffie.
+ # email: laurent.gaffie@gmail.com
+diff --git a/servers/Browser.py b/servers/Browser.py
+index 5dfaccf..f6b07c0 100644
+--- a/servers/Browser.py
++++ b/servers/Browser.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # This file is part of Responder, a network take-over set of tools 
+ # created and maintained by Laurent Gaffie.
+ # email: laurent.gaffie@gmail.com
+diff --git a/servers/DNS.py b/servers/DNS.py
+index 521599d..da47047 100755
+--- a/servers/DNS.py
++++ b/servers/DNS.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # This file is part of Responder, a network take-over set of tools 
+ # created and maintained by Laurent Gaffie.
+ # email: laurent.gaffie@gmail.com
+diff --git a/servers/FTP.py b/servers/FTP.py
+index d1ffac0..cfb6bf5 100755
+--- a/servers/FTP.py
++++ b/servers/FTP.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # This file is part of Responder, a network take-over set of tools 
+ # created and maintained by Laurent Gaffie.
+ # email: laurent.gaffie@gmail.com
+diff --git a/servers/HTTP.py b/servers/HTTP.py
+index 70b6b63..bbc4a7c 100644
+--- a/servers/HTTP.py
++++ b/servers/HTTP.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # This file is part of Responder, a network take-over set of tools 
+ # created and maintained by Laurent Gaffie.
+ # email: laurent.gaffie@gmail.com
+diff --git a/servers/HTTP_Proxy.py b/servers/HTTP_Proxy.py
+index 4463b0f..e58daf6 100755
+--- a/servers/HTTP_Proxy.py
++++ b/servers/HTTP_Proxy.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # This file is part of Responder, a network take-over set of tools 
+ # created and maintained by Laurent Gaffie.
+ # email: laurent.gaffie@gmail.com
+diff --git a/servers/IMAP.py b/servers/IMAP.py
+index 2e6c7ce..1fe8089 100644
+--- a/servers/IMAP.py
++++ b/servers/IMAP.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # This file is part of Responder, a network take-over set of tools 
+ # created and maintained by Laurent Gaffie.
+ # email: laurent.gaffie@gmail.com
+diff --git a/servers/Kerberos.py b/servers/Kerberos.py
+index 4605365..4528996 100644
+--- a/servers/Kerberos.py
++++ b/servers/Kerberos.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # This file is part of Responder, a network take-over set of tools 
+ # created and maintained by Laurent Gaffie.
+ # email: laurent.gaffie@gmail.com
+diff --git a/servers/LDAP.py b/servers/LDAP.py
+index 2b9fe65..47fd822 100644
+--- a/servers/LDAP.py
++++ b/servers/LDAP.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # This file is part of Responder, a network take-over set of tools 
+ # created and maintained by Laurent Gaffie.
+ # email: laurent.gaffie@gmail.com
+diff --git a/servers/MQTT.py b/servers/MQTT.py
+index 1f870e2..b6757ac 100644
+--- a/servers/MQTT.py
++++ b/servers/MQTT.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # This file is part of Responder, a network take-over set of tools 
+ # created and maintained by Laurent Gaffie.
+ # email: laurent.gaffie@gmail.com
+diff --git a/servers/MSSQL.py b/servers/MSSQL.py
+index 5efd26c..100db88 100644
+--- a/servers/MSSQL.py
++++ b/servers/MSSQL.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # This file is part of Responder, a network take-over set of tools 
+ # created and maintained by Laurent Gaffie.
+ # email: laurent.gaffie@gmail.com
+diff --git a/servers/POP3.py b/servers/POP3.py
+index 59d060c..6d99808 100644
+--- a/servers/POP3.py
++++ b/servers/POP3.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # This file is part of Responder, a network take-over set of tools 
+ # created and maintained by Laurent Gaffie.
+ # email: laurent.gaffie@gmail.com
+diff --git a/servers/Proxy_Auth.py b/servers/Proxy_Auth.py
+index 8bb6c13..d5bad00 100644
+--- a/servers/Proxy_Auth.py
++++ b/servers/Proxy_Auth.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # This file is part of Responder, a network take-over set of tools 
+ # created and maintained by Laurent Gaffie.
+ # email: laurent.gaffie@gmail.com
+diff --git a/servers/RDP.py b/servers/RDP.py
+index 3047a4d..e02a91c 100755
+--- a/servers/RDP.py
++++ b/servers/RDP.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # This file is part of Responder, a network take-over set of tools 
+ # created and maintained by Laurent Gaffie.
+ # email: laurent.gaffie@gmail.com
+diff --git a/servers/RPC.py b/servers/RPC.py
+index ce931f5..d3b0f38 100644
+--- a/servers/RPC.py
++++ b/servers/RPC.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # This file is part of Responder, a network take-over set of tools 
+ # created and maintained by Laurent Gaffie.
+ # email: laurent.gaffie@gmail.com
+diff --git a/servers/SMB.py b/servers/SMB.py
+index b93ebb7..139a383 100644
+--- a/servers/SMB.py
++++ b/servers/SMB.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # This file is part of Responder, a network take-over set of tools 
+ # created and maintained by Laurent Gaffie.
+ # email: laurent.gaffie@gmail.com
+diff --git a/servers/SMTP.py b/servers/SMTP.py
+index 17fa26f..973c0a1 100644
+--- a/servers/SMTP.py
++++ b/servers/SMTP.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # This file is part of Responder, a network take-over set of tools 
+ # created and maintained by Laurent Gaffie.
+ # email: laurent.gaffie@gmail.com
+diff --git a/servers/SNMP.py b/servers/SNMP.py
+index 718b5e3..f260594 100755
+--- a/servers/SNMP.py
++++ b/servers/SNMP.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # This file is part of Responder, a network take-over set of tools
+ # created and maintained by Laurent Gaffie.
+ # email: laurent.gaffie@gmail.com
+diff --git a/servers/WinRM.py b/servers/WinRM.py
+index bf730e4..19c45f7 100644
+--- a/servers/WinRM.py
++++ b/servers/WinRM.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # This file is part of Responder, a network take-over set of tools 
+ # created and maintained by Laurent Gaffie.
+ # email: laurent.gaffie@gmail.com
+diff --git a/settings.py b/settings.py
+index ee96190..71038b3 100644
+--- a/settings.py
++++ b/settings.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # This file is part of Responder, a network take-over set of tools 
+ # created and maintained by Laurent Gaffie.
+ # email: laurent.gaffie@gmail.com
+diff --git a/tools/BrowserListener.py b/tools/BrowserListener.py
+index f672621..ab07307 100755
+--- a/tools/BrowserListener.py
++++ b/tools/BrowserListener.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # This file is part of Responder, a network take-over set of tools
+ # created and maintained by Laurent Gaffie.
+ # email: laurent.gaffie@gmail.com
+diff --git a/tools/DNSUpdate.py b/tools/DNSUpdate.py
+index 23b0791..9d9e65d 100644
+--- a/tools/DNSUpdate.py
++++ b/tools/DNSUpdate.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ 
+ import sys
+ import argparse
+@@ -182,4 +182,4 @@ elif args.action == 'rm':
+     con.delete(record_dn)
+     if con.result['description'] == "success":
+         print("Record deleted successfully")
+-        
+\ No newline at end of file
++        
+diff --git a/tools/FindSQLSrv.py b/tools/FindSQLSrv.py
+index 58dedf9..ce6a7c3 100755
+--- a/tools/FindSQLSrv.py
++++ b/tools/FindSQLSrv.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # This file is part of Responder, a network take-over set of tools
+ # created and maintained by Laurent Gaffie.
+ # email: laurent.gaffie@gmail.com
+diff --git a/tools/Icmp-Redirect.py b/tools/Icmp-Redirect.py
+index c07ad9a..7aa64c2 100755
+--- a/tools/Icmp-Redirect.py
++++ b/tools/Icmp-Redirect.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # This file is part of Responder, a network take-over set of tools
+ # created and maintained by Laurent Gaffie.
+ # email: laurent.gaffie@gmail.com
+diff --git a/tools/MultiRelay.py b/tools/MultiRelay.py
+index 522a20e..f666916 100755
+--- a/tools/MultiRelay.py
++++ b/tools/MultiRelay.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # -*- coding: latin-1 -*-
+ # This file is part of Responder, a network take-over set of tools
+ # created and maintained by Laurent Gaffie.
+diff --git a/tools/MultiRelay/RelayMultiCore.py b/tools/MultiRelay/RelayMultiCore.py
+index 3c1fa2d..4562ccf 100644
+--- a/tools/MultiRelay/RelayMultiCore.py
++++ b/tools/MultiRelay/RelayMultiCore.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # -*- coding: latin-1 -*-
+ # This file is part of Responder, a network take-over set of tools
+ # created and maintained by Laurent Gaffie.
+diff --git a/tools/MultiRelay/RelayMultiPackets.py b/tools/MultiRelay/RelayMultiPackets.py
+index 095059b..2fb5345 100644
+--- a/tools/MultiRelay/RelayMultiPackets.py
++++ b/tools/MultiRelay/RelayMultiPackets.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # -*- coding: latin-1 -*-
+ # This file is part of Responder, a network take-over set of tools
+ # created and maintained by Laurent Gaffie.
+diff --git a/tools/MultiRelay/impacket-dev/secretsdump.py b/tools/MultiRelay/impacket-dev/secretsdump.py
+index 35e3a0b..454e063 100755
+--- a/tools/MultiRelay/impacket-dev/secretsdump.py
++++ b/tools/MultiRelay/impacket-dev/secretsdump.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # SECUREAUTH LABS. Copyright 2018 SecureAuth Corporation. All rights reserved.
+ #
+ # This software is provided under a slightly modified version
+diff --git a/tools/SMBFinger/Finger.py b/tools/SMBFinger/Finger.py
+index 5de42db..3297c80 100755
+--- a/tools/SMBFinger/Finger.py
++++ b/tools/SMBFinger/Finger.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # This file is part of Responder, a network take-over set of tools
+ # created and maintained by Laurent Gaffie.
+ # email: laurent.gaffie@gmail.com
+diff --git a/utils.py b/utils.py
+index 38a72b1..f3e1454 100644
+--- a/utils.py
++++ b/utils.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # This file is part of Responder, a network take-over set of tools 
+ # created and maintained by Laurent Gaffie.
+ # email: laurent.gaffie@gmail.com

@@ -1,0 +1,5 @@
+*.py usr/share/responder/
+Responder.conf etc/responder/
+certs files poisoners servers tools usr/share/responder/
+debian/helper-script/* usr/sbin/
+debian/script usr/share/responder

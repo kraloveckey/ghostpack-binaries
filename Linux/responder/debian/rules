@@ -1,0 +1,17 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@ --with python3
+
+override_dh_fixperms:
+	dh_fixperms
+	chmod 755 debian/responder/usr/share/responder/certs/gen-self-signed-cert.sh
+	chmod 644 debian/responder/usr/share/responder/tools/MultiRelay/impacket-dev/impacket/dcerpc/v5/dhcpm.py
+
+override_dh_install:
+	cd tools && x86_64-w64-mingw32-gcc ./MultiRelay/bin/Runas.c -o ./MultiRelay/bin/Runas.exe -municode -lwtsapi32 -luserenv
+	cd tools && x86_64-w64-mingw32-gcc ./MultiRelay/bin/Syssvc.c -o ./MultiRelay/bin/Syssvc.exe -municode
+	dh_install -XCOPYING -XCHANGELOG -XREADME -X.gitignore
+
+override_dh_python3:
+	dh_python3 --shebang="/usr/bin/env python3"

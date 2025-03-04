@@ -1,0 +1,66 @@
+From: Sophie Brun <sophie@offensive-security.com>
+Date: Mon, 14 Feb 2022 12:33:07 +0100
+Subject: fix-usage-example
+
+Fixed the usage examples to display the correct binary name.
+Forwarded: not-needed
+Last-Update: 2022-02-14
+---
+ Responder.py           | 2 +-
+ tools/Icmp-Redirect.py | 2 +-
+ tools/MultiRelay.py    | 2 +-
+ tools/RunFinger.py     | 2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/Responder.py b/Responder.py
+index bbd3c7a..9243642 100755
+--- a/Responder.py
++++ b/Responder.py
+@@ -25,7 +25,7 @@ from utils import *
+ import struct
+ banner()
+ 
+-parser = optparse.OptionParser(usage='python %prog -I eth0 -w -d\nor:\npython %prog -I eth0 -wd', version=settings.__version__, prog=sys.argv[0])
++parser = optparse.OptionParser(usage='responder -I eth0 -w -d\nor:\nresponder -I eth0 -wd', version=settings.__version__, prog=sys.argv[0])
+ parser.add_option('-A','--analyze',        action="store_true", help="Analyze mode. This option allows you to see NBT-NS, BROWSER, LLMNR requests without responding.", dest="Analyze", default=False)
+ parser.add_option('-I','--interface',      action="store",      help="Network interface to use, you can use 'ALL' as a wildcard for all interfaces", dest="Interface", metavar="eth0", default=None)
+ parser.add_option('-i','--ip',             action="store",      help="Local IP to use \033[1m\033[31m(only for OSX)\033[0m", dest="OURIP", metavar="10.0.0.21", default=None)
+diff --git a/tools/Icmp-Redirect.py b/tools/Icmp-Redirect.py
+index c0afc5e..4949693 100755
+--- a/tools/Icmp-Redirect.py
++++ b/tools/Icmp-Redirect.py
+@@ -29,7 +29,7 @@ from subprocess import call
+ 
+ if (sys.version_info < (3, 0)):
+    sys.exit('This script is meant to be run with Python3')
+-parser = optparse.OptionParser(usage='python %prog -I eth0 -i 10.20.30.40 -g 10.20.30.254 -t 10.20.30.48 -r 10.20.40.1',
++parser = optparse.OptionParser(usage='responder-Icmp-Redirect -I eth0 -i 10.20.30.40 -g 10.20.30.254 -t 10.20.30.48 -r 10.20.40.1',
+                                prog=sys.argv[0],
+                                )
+ parser.add_option('-i','--ip', action="store", help="The ip address to redirect the traffic to. (usually yours)", metavar="10.20.30.40",dest="OURIP")
+diff --git a/tools/MultiRelay.py b/tools/MultiRelay.py
+index cabbf17..522a20e 100755
+--- a/tools/MultiRelay.py
++++ b/tools/MultiRelay.py
+@@ -81,7 +81,7 @@ def UserCallBack(op, value, dmy, parser):
+         args.extend(getattr(parser.values, op.dest))
+     setattr(parser.values, op.dest, args)
+ 
+-parser = optparse.OptionParser(usage="\npython %prog -t 10.20.30.40 -u Administrator lgandx admin\npython %prog -t 10.20.30.40 -u ALL", version=__version__, prog=sys.argv[0])
++parser = optparse.OptionParser(usage="\nresponder-MultiRelay -t 10.20.30.40 -u Administrator lgandx admin\nresponder-MultiRelay -t 10.20.30.40 -u ALL", version=__version__, prog=sys.argv[0])
+ parser.add_option('-t',action="store", help="Target server for SMB relay.",metavar="10.20.30.45",dest="TARGET")
+ parser.add_option('-p',action="store", help="Additional port to listen on, this will relay for proxy, http and webdav incoming packets.",metavar="8081",dest="ExtraPort")
+ parser.add_option('-u', '--UserToRelay', help="Users to relay. Use '-u ALL' to relay all users.", action="callback", callback=UserCallBack, dest="UserToRelay")
+diff --git a/tools/RunFinger.py b/tools/RunFinger.py
+index d291fa7..2fb1d03 100755
+--- a/tools/RunFinger.py
++++ b/tools/RunFinger.py
+@@ -28,7 +28,7 @@ from odict import OrderedDict
+ 
+ __version__ = "1.8"
+ 
+-parser = optparse.OptionParser(usage='python %prog -i 10.10.10.224\nor:\npython %prog -i 10.10.10.0/24', version=__version__, prog=sys.argv[0])
++parser = optparse.OptionParser(usage='responder-RunFinger -i 10.10.10.224\nor:\nresponder-RunFinger -i 10.10.10.0/24', version=__version__, prog=sys.argv[0])
+ 
+ parser.add_option('-i','--ip', action="store", help="Target IP address or class C", dest="TARGET", metavar="10.10.10.224", default=None)
+ parser.add_option('-f','--filename', action="store", help="Target file", dest="Filename", metavar="ips.txt", default=None)

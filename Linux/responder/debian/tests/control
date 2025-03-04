@@ -1,0 +1,5 @@
+Test-Command: responder -h
+Restrictions: superficial, needs-root, allow-stderr
+
+Test-Command: responder-Icmp-Redirect -h && responder-MultiRelay -h && responder-RunFinger -h
+Restrictions: superficial, allow-stderr
