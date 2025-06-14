@@ -6,6 +6,10 @@ align="center">🆘 Precompiled binaries for Ghostpack and other for Windows and
 
 ---
 
-[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/kraloveckey)
-
 The collection of compiled binaries for [`GhostPack`](https://github.com/GhostPack) and other precompiled binaries for Windows and Linux.
+
+---
+
+<a href="https://www.paypal.com/donate/?hosted_button_id=GWWLEXEF3XL92">
+  <img src="https://raw.githubusercontent.com/kraloveckey/kraloveckey/refs/heads/main/.assets/paypal-donate-button.png" alt="Donate with PayPal" width="225" height="100"/>
+</a>
