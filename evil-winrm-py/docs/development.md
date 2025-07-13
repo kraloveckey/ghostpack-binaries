@@ -5,8 +5,8 @@
 Download the repository.
 
 ```bash
-git clone https://github.com/kraloveckey/mini-python
-cd mini-python/evil-winrm-py
+git clone https://github.com/kraloveckey/ghostpack-binaries
+cd ghostpack-binaries/evil-winrm-py
 ```
 
 Create a virtual environment (optional but recommended):

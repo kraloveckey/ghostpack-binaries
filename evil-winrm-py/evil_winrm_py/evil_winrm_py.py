@@ -3,7 +3,7 @@
 
 """
 evil-winrm-py
-https://github.com/kraloveckey/mini-python/evil-winrm-py
+https://github.com/kraloveckey/ghostpack-binaries/evil-winrm-py
 """
 
 import argparse

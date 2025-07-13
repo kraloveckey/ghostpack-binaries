@@ -1,4 +1,4 @@
-# This script is part of evil-winrm-py project https://github.com/kraloveckey/mini-python/evil-winrm-py
+# This script is part of evil-winrm-py project https://github.com/kraloveckey/ghostpack-binaries/evil-winrm-py
 # It reads a Base64 encoded chunk of bytes, writes it to a file, and optionally appends to an existing file.
 # It also calculates the MD5 hash of the file after writing if required.
 

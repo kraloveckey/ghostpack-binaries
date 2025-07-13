@@ -55,8 +55,8 @@ pip install evil-winrm-py[kerberos] # for kerberos support on Linux
 or if you want to install with latest commit from the main branch you can do so by cloning the repository and installing it with `pip`/`pipx`/`uv`:
 
 ```bash
-git clone https://github.com/kraloveckey/mini-python
-cd mini-python/evil-winrm-py
+git clone https://github.com/kraloveckey/ghostpack-binaries
+cd ghostpack-binaries/evil-winrm-py
 pip install .
 ```
 
