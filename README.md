@@ -1,12 +1,12 @@
 <br>
 
 <p align="center"><img src=".assets/binary.png" width="200px"></p>
-<h1 align="center">GhostPack Precompiled Binaries</h1> <p
-align="center">🆘 Precompiled binaries for Ghostpack and other for Windows and Linux.</p>
+<h1 align="center">GhostPack Precompiled Binaries and Scripts</h1> <p
+align="center">🆘 Scripts and precompiled security and red team binaries for Windows, Linux and macOS.</p>
 
 ---
 
-The collection of compiled binaries for [`GhostPack`](https://github.com/GhostPack) and other precompiled binaries for Windows and Linux.
+The collection of scripts, precompiled binaries for [`GhostPack`](https://github.com/GhostPack), security tools and red team utilities for Windows, Linux and macOS environments. 
 
 ---
 
