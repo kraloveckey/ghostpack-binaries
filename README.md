@@ -1,6 +1,6 @@
 <br>
 
-<p align="center"><img src=".assets/binary.png" width="200px"></p>
+<p align="center"><img src=".assets/mr.png" width="200px"></p>
 <h1 align="center">GhostPack Precompiled Binaries and Scripts</h1> <p
 align="center">🆘 Scripts and precompiled security and red team binaries for Windows, Linux and macOS.</p>
 
