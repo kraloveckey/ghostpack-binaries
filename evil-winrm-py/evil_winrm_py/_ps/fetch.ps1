@@ -1,4 +1,4 @@
-# This script is part of evil-winrm-py project https://github.com/kraloveckey/ghostpack-binaries/evil-winrm-py
+# This script is part of evil-winrm-py project https://github.com/adityatelange/evil-winrm-py
 # It reads a file in chunks, converts each chunk to Base64, and outputs metadata and chunks as JSON.
 
 # --- Define Parameters ---

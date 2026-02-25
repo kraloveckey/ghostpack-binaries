@@ -1,12 +1,12 @@
-# Development
+# Development Environment Setup
 
 ## Setup
 
 Download the repository.
 
 ```bash
-git clone https://github.com/kraloveckey/ghostpack-binaries
-cd ghostpack-binaries/evil-winrm-py
+git clone https://github.com/adityatelange/evil-winrm-py
+cd evil-winrm-py
 ```
 
 Create a virtual environment (optional but recommended):
@@ -19,7 +19,7 @@ source venv/bin/activate
 Install the required packages:
 
 ```bash
-pip install -r requirements.txt
+pip install pypsrp[kerberos]==0.8.1 prompt_toolkit==3.0.51 tqdm==4.67.1
 ```
 
 ## Create a test file

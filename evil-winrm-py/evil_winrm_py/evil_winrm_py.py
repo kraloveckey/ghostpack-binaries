@@ -3,7 +3,7 @@
 
 """
 evil-winrm-py
-https://github.com/kraloveckey/ghostpack-binaries/evil-winrm-py
+https://github.com/adityatelange/evil-winrm-py
 """
 
 import argparse
@@ -17,7 +17,7 @@ import shutil
 import signal
 import sys
 import tempfile
-import threading
+import textwrap
 import time
 import traceback
 from importlib import resources
@@ -32,12 +32,15 @@ from prompt_toolkit.shortcuts import clear
 from pypsrp.complex_objects import PSInvocationState
 from pypsrp.exceptions import AuthenticationError, WinRMTransportError, WSManFaultError
 from pypsrp.powershell import PowerShell, RunspacePool
-from pypsrp.wsman import WSMan, requests
-from spnego.exceptions import NoCredentialError, OperationNotAvailableError
+from requests.exceptions import ConnectionError
+from spnego.exceptions import NoCredentialError, OperationNotAvailableError, SpnegoError
 from tqdm import tqdm
 
 # check if kerberos is installed
 try:
+    from gssapi.creds import Credentials as GSSAPICredentials
+    from gssapi.exceptions import ExpiredCredentialsError, MissingCredentialsError
+    from gssapi.raw import Creds as RawCreds
     from krb5._exceptions import Krb5Error
 
     is_kerb_available = True
@@ -50,19 +53,55 @@ except ImportError:
 
 
 from evil_winrm_py import __version__
+from evil_winrm_py.pypsrp_ewp.wsman import WSManEWP
 
 # --- Constants ---
 LOG_PATH = Path.cwd().joinpath("evil_winrm_py.log")
 HISTORY_FILE = Path.home().joinpath(".evil_winrm_py_history")
 HISTORY_LENGTH = 1000
-LAST_RUN_AT = 0
-MENU_COMMANDS = [
-    "upload",
-    "download",
-    "menu",
-    "clear",
-    "exit",
-]
+MENU_COMMANDS = {
+    "services": {
+        "syntax": "services",
+        "info": "Show the running services (except system services)",
+    },
+    "upload": {
+        "syntax": "upload <local_path> <remote_path>",
+        "info": "Upload a file",
+    },
+    "download": {
+        "syntax": "download <remote_path> <local_path>",
+        "info": "Download a file",
+    },
+    "loadps": {
+        "syntax": "loadps <local_path>.ps1",
+        "info": "Load PowerShell functions from a local script",
+    },
+    "runps": {
+        "syntax": "runps <local_path>.ps1",
+        "info": "Run a local PowerShell script on the remote host",
+    },
+    "loaddll": {
+        "syntax": "loaddll <local_path>.dll",
+        "info": "Load a local DLL (in-memory) as a module on the remote host",
+    },
+    "runexe": {
+        "syntax": "runexe <local_path>.exe [args]",
+        "info": "Upload and execute (in-memory) a local EXE on the remote host",
+    },
+    "menu": {
+        "syntax": "menu",
+        "info": "Show this menu",
+    },
+    "clear": {
+        "syntax": "clear, cls",
+        "info": "Clear the screen",
+    },
+    "exit": {
+        "syntax": "exit",
+        "info": "Exit the shell",
+    },
+}
+COMMAND_SUGGESTIONS = []
 
 # --- Colors ---
 # ANSI escape codes for colored output
@@ -108,21 +147,19 @@ class DelayedKeyboardInterrupt:
             self.old_handler(*self.signal_received)
 
 
-def run_ps(r_pool: RunspacePool, command: str) -> tuple[str, list, bool]:
+def run_ps_cmd(r_pool: RunspacePool, command: str) -> tuple[str, list, bool]:
     """Runs a PowerShell command and returns the output, streams, and error status."""
     log.info("Executing command: {}".format(command))
     ps = PowerShell(r_pool)
     ps.add_cmdlet("Invoke-Expression").add_parameter("Command", command)
     ps.add_cmdlet("Out-String").add_parameter("Stream")
     ps.invoke()
-    global LAST_RUN_AT
-    LAST_RUN_AT = int(time.time())
     return "\n".join(ps.output), ps.streams, ps.had_errors
 
 
 def get_prompt(r_pool: RunspacePool) -> str:
     """Returns the prompt string for the interactive shell."""
-    output, streams, had_errors = run_ps(
+    output, streams, had_errors = run_ps_cmd(
         r_pool, "$pwd.Path"
     )  # Get current working directory
     if not had_errors:
@@ -133,17 +170,8 @@ def get_prompt(r_pool: RunspacePool) -> str:
 def show_menu() -> None:
     """Displays the help menu for interactive commands."""
     print(BOLD + "\nMenu:" + RESET)
-    commands = [
-        # ("command", "description")
-        ("upload <local_path> <remote_path>", "Upload a file"),
-        ("download <remote_path> <local_path>", "Download a file"),
-        ("menu", "Show this menu"),
-        ("clear, cls", "Clear the screen"),
-        ("exit", "Exit the shell"),
-    ]
-
-    for command, description in commands:
-        print(f"{CYAN}[+] {command:<55} - {description}{RESET}")
+    for command in MENU_COMMANDS.values():
+        print(f"{CYAN}[+] {command['syntax']:<55} - {command['info']}{RESET}")
     print("Note: Use absolute paths for upload/download for reliability.\n")
 
 
@@ -166,6 +194,12 @@ def get_directory_and_partial_name(text: str, sep: str) -> tuple[str, str]:
     return directory_prefix, partial_name
 
 
+def _ps_single_quote(value: str) -> str:
+    """Wraps a value in single quotes for PowerShell, escaping embedded quotes."""
+    escaped = value.replace("'", "''")
+    return f"'{escaped}'"
+
+
 def get_remote_path_suggestions(
     r_pool: RunspacePool,
     directory_prefix: str,
@@ -181,7 +215,7 @@ def get_remote_path_suggestions(
     attrs = ""
     if not re.match(r"^[a-zA-Z]:", directory_prefix):
         # If the path doesn't start with a drive letter, prepend the current directory
-        pwd, streams, had_errors = run_ps(
+        pwd, streams, had_errors = run_ps_cmd(
             r_pool, "$pwd.Path"
         )  # Get current working directory
         directory_prefix = f"{pwd}\\{directory_prefix}"
@@ -195,30 +229,81 @@ def get_remote_path_suggestions(
     ps.add_cmdlet("Invoke-Expression").add_parameter("Command", command)
     ps.add_cmdlet("Out-String").add_parameter("Stream")
     ps.invoke()
-    global LAST_RUN_AT
-    LAST_RUN_AT = int(time.time())
     return ps.output
 
 
-def get_local_path_suggestions(directory_prefix: str, partial_name: str) -> list[str]:
+def get_remote_command_suggestions(
+    r_pool: RunspacePool, command_prefix: str
+) -> list[str]:
+    """
+    Returns a list of remote PowerShell command names (cmdlets/aliases) that start
+    with the provided prefix.
+    """
+
+    prefix_literal = _ps_single_quote(command_prefix or "")
+    ps_script = textwrap.dedent(
+        f"""
+        $prefix = {prefix_literal};
+        if ([string]::IsNullOrEmpty($prefix)) {{
+            $pattern = '*';
+        }} else {{
+            $pattern = "$prefix*";
+        }}
+        $cmds = Get-Command -Name $pattern -ErrorAction SilentlyContinue |
+            Select-Object -ExpandProperty Name;
+        if (-not $cmds) {{
+            $cmds = Get-Alias -Name $pattern -ErrorAction SilentlyContinue |
+                Select-Object -ExpandProperty Name;
+        }}
+        $cmds | Sort-Object -Unique
+        """
+    ).strip()
+
+    output, _, had_errors = run_ps_cmd(r_pool, ps_script)
+    if had_errors:
+        return []
+    suggestions = [line.strip() for line in output.splitlines() if line.strip()]
+    return suggestions
+
+
+def get_local_path_suggestions(
+    directory_prefix: str, partial_name: str, extension: str = None
+) -> list[str]:
     """
     Returns a list of local path suggestions based on path entered by the user.
+    Optionally filters files by extension (e.g., ".ps1").
     """
     suggestions = []
 
-    # Get all files and directories in the specified path
+    # Expand the tilde to the user's home directory
+    home = str(Path.home())
+
     try:
-        entries = Path(directory_prefix).iterdir()
+        entries = Path(directory_prefix).expanduser().iterdir()
         for entry in entries:
             if entry.match(f"{partial_name}*"):
                 if entry.is_dir():
                     entry = (
                         f"{entry}{os.sep}"  # Append a trailing slash for directories
                     )
-                suggestions.append(str(entry))
+                    if directory_prefix.startswith("~"):
+                        # If the directory prefix starts with ~, replace home with ~
+                        entry = str(entry).replace(home, "~", 1)
+                    suggestions.append(str(entry))
+                else:
+                    if (extension is None) or (
+                        entry.suffix.lower() == extension.lower()
+                    ):
+                        if directory_prefix.startswith("~"):
+                            # If the directory prefix starts with ~, replace home with ~
+                            entry = str(entry).replace(home, "~", 1)
+                        suggestions.append(str(entry))
     except (FileNotFoundError, NotADirectoryError, PermissionError):
         pass
     finally:
+        if extension:
+            # Sort suggestions alphabetically, prioritizing those that match the extension
+            return sorted(suggestions, key=lambda x: not x.endswith(extension))
         return suggestions
 
 
@@ -237,18 +322,45 @@ class CommandPathCompleter(Completer):
         tokens = text_before_cursor.split(maxsplit=1)
 
         if not tokens:  # Empty input, suggest all commands
-            for cmd_sugg in MENU_COMMANDS:
+            for cmd_sugg in list(MENU_COMMANDS.keys()) + COMMAND_SUGGESTIONS:
                 yield Completion(cmd_sugg, start_position=0, display=cmd_sugg)
             return
 
         command_typed_part = tokens[0]
 
+        # Handle .\name or ./name as first-token paths (run from current remote directory)
+        if command_typed_part.startswith(".\\") or command_typed_part.startswith("./"):
+            path_being_completed = command_typed_part
+            # strip surrounding quotes if any
+            if path_being_completed.startswith('"') and path_being_completed.endswith(
+                '"'
+            ):
+                path_being_completed = path_being_completed.strip('"')
+            directory_prefix, partial_name = get_directory_and_partial_name(
+                path_being_completed, sep="\\"
+            )
+            suggestions = get_remote_path_suggestions(
+                self.r_pool, directory_prefix, partial_name
+            )
+            for sugg_path in suggestions:
+                text_to_insert_in_prompt = f".\\" + sugg_path
+                if " " in sugg_path:
+                    text_to_insert_in_prompt = f'& ".\\{sugg_path}"'
+                yield Completion(
+                    text_to_insert_in_prompt,
+                    start_position=-len(command_typed_part),
+                    display=sugg_path,
+                )
+            return
+
         # Case 1: Completing the command name itself
         # There's only one token and no trailing space.
         if len(tokens) == 1 and not text_before_cursor.endswith(" "):
             # User is typing the command, -> "downl"
-            for cmd_sugg in MENU_COMMANDS:
+            seen_commands = set()
+            for cmd_sugg in list(MENU_COMMANDS.keys()) + COMMAND_SUGGESTIONS:
                 if cmd_sugg.startswith(command_typed_part):
+                    seen_commands.add(cmd_sugg.lower())
                     yield Completion(
                         cmd_sugg + " ",  # Full suggested command
                         start_position=-len(
@@ -256,6 +368,22 @@ class CommandPathCompleter(Completer):
                         ),  # Replace the typed part
                         display=cmd_sugg,
                     )
+            remote_cmds = get_remote_command_suggestions(
+                self.r_pool, command_typed_part
+            )
+            lower_prefix = command_typed_part.lower()
+            for remote_cmd in remote_cmds:
+                cmd_lower = remote_cmd.lower()
+                if lower_prefix and not cmd_lower.startswith(lower_prefix):
+                    continue
+                if cmd_lower in seen_commands:
+                    continue
+                seen_commands.add(cmd_lower)
+                yield Completion(
+                    remote_cmd + " ",
+                    start_position=-len(command_typed_part),
+                    display=remote_cmd,
+                )
             return
 
         # Case 2: Completing a path argument
@@ -390,6 +518,129 @@ class CommandPathCompleter(Completer):
             else:
                 # More than 2 arguments, e.g., "download remote_path local_path extra_arg"
                 pass
+        elif actual_command_name in ["loadps", "runps"]:
+            # syntax: loadps <local_path>
+            num_args_present = len(args)
+
+            if num_args_present == 0:
+                # User typed "loadps "
+                # Completing the 1st argument (local_path), currently empty
+                current_arg_text_being_completed = ""
+                directory_prefix, partial_name = get_directory_and_partial_name(
+                    current_arg_text_being_completed, sep=os.sep
+                )
+                suggestions = get_local_path_suggestions(
+                    directory_prefix, partial_name, extension=".ps1"
+                )
+            elif num_args_present == 1:
+                # We have "loadps arg1" or "loadps local_path "
+                if path_typed_segment.endswith(" "):
+                    # 1st argument (local_path) is complete, currently empty.
+                    current_arg_text_being_completed = ""
+                    directory_prefix, partial_name = get_directory_and_partial_name(
+                        current_arg_text_being_completed, sep=os.sep
+                    )
+                    suggestions = get_local_path_suggestions(
+                        directory_prefix, partial_name, extension=".ps1"
+                    )
+                else:
+                    # Still completing the 1st argument (local_path)
+                    current_arg_text_being_completed = path_being_completed = args[0]
+                    if path_being_completed.startswith('"'):
+                        path_being_completed = current_arg_text_being_completed.strip(
+                            '"'
+                        )
+                    directory_prefix, partial_name = get_directory_and_partial_name(
+                        path_being_completed, sep=os.sep
+                    )
+                    suggestions = get_local_path_suggestions(
+                        directory_prefix, partial_name, extension=".ps1"
+                    )
+            else:
+                # More than 1 argument, e.g., "loadps local_path extra_arg"
+                pass
+        elif actual_command_name in ["loaddll"]:
+            # syntax: loaddll <local_path>
+            num_args_present = len(args)
+
+            if num_args_present == 0:
+                # User typed "loaddll "
+                # Completing the 1st argument (local_path), currently empty
+                current_arg_text_being_completed = ""
+                directory_prefix, partial_name = get_directory_and_partial_name(
+                    current_arg_text_being_completed, sep=os.sep
+                )
+                suggestions = get_local_path_suggestions(
+                    directory_prefix, partial_name, extension=".dll"
+                )
+            elif num_args_present == 1:
+                # We have "loaddll arg1" or "loaddll local_path "
+                if path_typed_segment.endswith(" "):
+                    # 1st argument (local_path) is complete, currently empty.
+                    current_arg_text_being_completed = ""
+                    directory_prefix, partial_name = get_directory_and_partial_name(
+                        current_arg_text_being_completed, sep=os.sep
+                    )
+                    suggestions = get_local_path_suggestions(
+                        directory_prefix, partial_name, extension=".dll"
+                    )
+                else:
+                    # Still completing the 1st argument (local_path)
+                    current_arg_text_being_completed = path_being_completed = args[0]
+                    if path_being_completed.startswith('"'):
+                        path_being_completed = current_arg_text_being_completed.strip(
+                            '"'
+                        )
+                    directory_prefix, partial_name = get_directory_and_partial_name(
+                        path_being_completed, sep=os.sep
+                    )
+                    suggestions = get_local_path_suggestions(
+                        directory_prefix, partial_name, extension=".dll"
+                    )
+            else:
+                # More than 1 argument, e.g., "loaddll local_path extra_arg"
+                pass
+        elif actual_command_name in ["runexe"]:
+            # syntax: runexe <local_path>
+            num_args_present = len(args)
+
+            if num_args_present == 0:
+                # User typed "runexe "
+                # Completing the 1st argument (local_path), currently empty
+                current_arg_text_being_completed = ""
+                directory_prefix, partial_name = get_directory_and_partial_name(
+                    current_arg_text_being_completed, sep=os.sep
+                )
+                suggestions = get_local_path_suggestions(
+                    directory_prefix, partial_name, extension=".exe"
+                )
+            elif num_args_present == 1:
+                # We have "runexe arg1" or "runexe local_path "
+                if path_typed_segment.endswith(" "):
+                    # 1st argument (local_path) is complete, currently empty.
+                    current_arg_text_being_completed = ""
+                    directory_prefix, partial_name = get_directory_and_partial_name(
+                        current_arg_text_being_completed, sep=os.sep
+                    )
+                    suggestions = get_local_path_suggestions(
+                        directory_prefix, partial_name, extension=".exe"
+                    )
+                else:
+                    # Still completing the 1st argument (local_path)
+                    current_arg_text_being_completed = path_being_completed = args[0]
+                    if path_being_completed.startswith('"'):
+                        path_being_completed = current_arg_text_being_completed.strip(
+                            '"'
+                        )
+                    directory_prefix, partial_name = get_directory_and_partial_name(
+                        path_being_completed, sep=os.sep
+                    )
+                    suggestions = get_local_path_suggestions(
+                        directory_prefix, partial_name, extension=".exe"
+                    )
+            else:
+                # More than 1 argument, e.g., "runexe local_path extra_arg"
+                pass
         else:
             if actual_command_name == "cd":
                 dirs_only = True
@@ -493,8 +744,6 @@ def download_file(r_pool: RunspacePool, remote_path: str, local_path: str) -> No
             while ps.state == PSInvocationState.RUNNING:
                 with DelayedKeyboardInterrupt():
                     ps.poll_invoke()
-                    global LAST_RUN_AT
-                    LAST_RUN_AT = int(time.time())
                 output = ps.output
                 if cursor == 0:
                     line = json.loads(output[0])
@@ -628,8 +877,6 @@ def upload_file(r_pool: RunspacePool, local_path: str, remote_path: str) -> None
 
                     while ps.state == PSInvocationState.RUNNING:
                         ps.poll_invoke()
-                        global LAST_RUN_AT
-                        LAST_RUN_AT = int(time.time())
                 output = ps.output
 
                 for line in output:
@@ -684,23 +931,227 @@ def upload_file(r_pool: RunspacePool, local_path: str, remote_path: str) -> None
                 ps.stop()
 
 
-def keep_runspace_alive(r_pool: RunspacePool) -> None:
-    """Keeps the RunspacePool alive by periodically reconnecting to the existing client.
-    This is useful to prevent the session from timing out due to inactivity.
+def _read_text_auto_encoding(path) -> str:
     """
-    while True:
-        time.sleep(100)
-        global LAST_RUN_AT
-        elapsed_time = time.time() - LAST_RUN_AT
-        if elapsed_time > 100 / 2:
-            log.info(
-                f"Reconnecting after {elapsed_time} to existing client to keep session alive."
-            )
-            try:
-                r_pool._connect_existing_client()
-            except (AuthenticationError, WinRMTransportError, WSManFaultError) as e:
-                log.error(f"Error while reconnecting: {e}")
-                break
+    Reads file with enc utf-8-sig, utf-8, utf-16, and latin-1.
+    Tries multiple encodings to read the file and returns the content as a string.
+    Raises UnicodeDecodeError/Exception if all encodings fail.
+    """
+    text_file_encodings = ["utf-8-sig", "utf-8", "utf-16", "latin-1"]
+    for enc in text_file_encodings:
+        try:
+            with open(path, "r", encoding=enc) as f:
+                text = f.read()
+            log.debug(f"Read '{path}' using encoding {enc}")
+            return text
+        except UnicodeDecodeError:
+            continue
+        except Exception as e:
+            raise
+    raise UnicodeDecodeError("All preferred encodings failed for file: {}".format(path))
+
+
+def load_ps(r_pool: RunspacePool, local_path: str):
+    ps = PowerShell(r_pool)
+    try:
+        try:
+            script = _read_text_auto_encoding(local_path)
+            print(script)
+        except Exception as e:
+            print(RED + f"[-] Error reading ps script file: {e}" + RESET)
+            log.error(f"Error reading ps script file: {e}")
+            return
+        # Remove block comments (<#...#>) to avoid matching commented-out functions
+        content = re.sub(r"<#.*?#>", "", script, flags=re.DOTALL)
+        # Find all function names in the script
+        pattern = r"function\s+([a-zA-Z0-9_-]+)\s*(?={|$)"
+        function_names = re.findall(pattern, content, re.MULTILINE)
+
+        ps.add_script(f". {{ {script} }}")  # Dot sourcing the script
+        ps.begin_invoke()
+
+        while ps.state == PSInvocationState.RUNNING:
+            with DelayedKeyboardInterrupt():
+                ps.poll_invoke()
+
+        if ps.streams.error:
+            print(RED + "[-] Failed to load PowerShell script." + RESET)
+            log.error(f"Failed to load PowerShell script '{local_path}'.")
+            for error in ps.streams.error:
+                print(RED + error._to_string + RESET)
+                log.error("Error: {}".format(error._to_string))
+                log.error("\tCategoryInfo: {}".format(error.message))
+                log.error("\tFullyQualifiedErrorId: {}".format(error.fq_error))
+        else:
+            print(GREEN + "[+] PowerShell script loaded successfully." + RESET)
+            log.info(f"PowerShell script '{local_path}' loaded successfully.")
+            global COMMAND_SUGGESTIONS
+            # Update the command suggestions with the function names
+            new_suggestions = []
+            for func in function_names:
+                if func not in COMMAND_SUGGESTIONS:
+                    new_suggestions += [func]
+            if new_suggestions:
+                COMMAND_SUGGESTIONS += new_suggestions
+                print(
+                    CYAN
+                    + "[*] New commands available (use TAB to autocomplete):"
+                    + RESET
+                )
+                print(", ".join(new_suggestions))
+    except KeyboardInterrupt:
+        if ps.state == PSInvocationState.RUNNING:
+            log.info("Stopping command execution.")
+            ps.stop()
+
+
+def run_ps(r_pool: RunspacePool, local_path: str) -> None:
+    """Runs a local PowerShell script on the remote host."""
+    ps = PowerShell(r_pool)
+    try:
+        try:
+            script = _read_text_auto_encoding(local_path)
+        except Exception as e:
+            print(RED + f"[-] Error reading ps script file: {e}" + RESET)
+            log.error(f"Error reading ps script file: {e}")
+            return
+
+        ps.add_script(script)
+        ps.begin_invoke()
+
+        cursor = 0
+        while ps.state == PSInvocationState.RUNNING:
+            with DelayedKeyboardInterrupt():
+                ps.poll_invoke()
+            output = ps.output
+            for line in output[cursor:]:
+                print(line)
+            cursor = len(output)
+
+        if ps.streams.error:
+            print(RED + "[-] Failed to run PowerShell script." + RESET)
+            log.error(f"Failed to run PowerShell script '{local_path}'.")
+            for error in ps.streams.error:
+                print(RED + error._to_string + RESET)
+                log.error("Error: {}".format(error._to_string))
+                log.error("\tCategoryInfo: {}".format(error.message))
+                log.error("\tFullyQualifiedErrorId: {}".format(error.fq_error))
+        else:
+            print(GREEN + "[+] PowerShell script ran successfully." + RESET)
+            log.info(f"PowerShell script '{local_path}' ran successfully.")
+    except KeyboardInterrupt:
+        if ps.state == PSInvocationState.RUNNING:
+            log.info("Stopping command execution.")
+            ps.stop()
+
+
+def load_dll(r_pool: RunspacePool, local_path: str) -> None:
+    """Uploads in-memory and loads a local DLL on the remote host, then invokes a specified function."""
+    ps = PowerShell(r_pool)
+    try:
+        with open(local_path, "rb") as dll_file:
+            dll_data = dll_file.read()
+            base64_dll = base64.b64encode(dll_data).decode("utf-8")
+
+        script = get_ps_script("loaddll.ps1")
+        ps.add_script(script)
+        ps.add_parameter("Base64Dll", base64_dll)
+        ps.begin_invoke()
+
+        cursor = 0
+        name = ""
+        while ps.state == PSInvocationState.RUNNING:
+            with DelayedKeyboardInterrupt():
+                ps.poll_invoke()
+            output = ps.output
+            for line in output[cursor:]:
+                line = json.loads(line)
+                if line["Type"] == "Error":
+                    print(RED + f"[-] Error: {line['Message']}" + RESET)
+                    log.error(f"Error: {line['Message']}")
+                    return
+                elif line["Type"] == "Metadata":
+                    if "Name" in line:
+                        name = line["Name"]
+                        print(GREEN + f"[+] Loading '{name}' as a module..." + RESET)
+                        log.info(f"Loading '{name}' as a module...")
+                    elif "Funcs" in line:
+                        print(
+                            CYAN
+                            + "[*] New commands available available (use TAB to autocomplete):"
+                            + RESET
+                        )
+                        print(", ".join(line["Funcs"]))
+                        global COMMAND_SUGGESTIONS
+                        new_suggestions = []
+                        for func in line["Funcs"]:
+                            if func not in COMMAND_SUGGESTIONS:
+                                new_suggestions += [func]
+                        if new_suggestions:
+                            COMMAND_SUGGESTIONS += new_suggestions
+            cursor = len(output)
+
+        if ps.streams.error:
+            print(RED + "[-] Failed to load DLL" + RESET)
+            log.error(f"Failed to load DLL '{local_path}'")
+            for error in ps.streams.error:
+                print(RED + error._to_string + RESET)
+                log.error("Error: {}".format(error._to_string))
+                log.error("\tCategoryInfo: {}".format(error.message))
+                log.error("\tFullyQualifiedErrorId: {}".format(error.fq_error))
+        else:
+            print(GREEN + f"[+] DLL '{name}' loaded successfully." + RESET)
+            log.info(f"DLL '{local_path}' loaded successfully.")
+    except KeyboardInterrupt:
+        if ps.state == PSInvocationState.RUNNING:
+            log.info("Stopping command execution.")
+            ps.stop()
+
+
+def run_exe(r_pool: RunspacePool, local_path: str, args: str = "") -> None:
+    """Uploads in-memory and runs a local executable on the remote host."""
+    ps = PowerShell(r_pool)
+    file_path = Path(local_path)
+    file_size = file_path.stat().st_size
+    print(
+        BLUE + f"[*] Uploading in-memory ({file_size} bytes) and executing..." + RESET
+    )
+    log.info(f"Uploading in-memory {file_size} bytes and executing...")
+    try:
+        with open(local_path, "rb") as exe_file:
+            exe_data = exe_file.read()
+            base64_exe = base64.b64encode(exe_data).decode("utf-8")
+
+        script = get_ps_script("exec.ps1")
+        ps.add_script(script)
+        ps.add_parameter("Base64Exe", base64_exe)
+        ps.add_parameter("Args", args.split(" "))
+        ps.begin_invoke()
+
+        cursor = 0
+        while ps.state == PSInvocationState.RUNNING:
+            with DelayedKeyboardInterrupt():
+                ps.poll_invoke()
+            output = ps.output
+            for line in output[cursor:]:
+                print(line)
+            cursor = len(output)
+
+        if ps.streams.error:
+            print(RED + "[-] Failed to run executable." + RESET)
+            log.error(f"Failed to run executable '{local_path}'.")
+            for error in ps.streams.error:
+                print(RED + error._to_string + RESET)
+                log.error("Error: {}".format(error._to_string))
+                log.error("\tCategoryInfo: {}".format(error.message))
+                log.error("\tFullyQualifiedErrorId: {}".format(error.fq_error))
+        else:
+            print(GREEN + "[+] Executable ran successfully." + RESET)
+            log.info(f"Executable '{local_path}' ran successfully.")
+    except KeyboardInterrupt:
+        if ps.state == PSInvocationState.RUNNING:
+            log.info("Stopping command execution.")
+            ps.stop()
 
 
 def interactive_shell(r_pool: RunspacePool) -> None:
@@ -718,7 +1169,10 @@ def interactive_shell(r_pool: RunspacePool) -> None:
 
     while True:
         try:
-            prompt_text = ANSI(get_prompt(r_pool))
+            try:
+                prompt_text = ANSI(get_prompt(r_pool))
+            except (KeyboardInterrupt, EOFError):
+                return
             command = prompt_session.prompt(
                 prompt_text,
                 completer=completer,
@@ -728,8 +1182,8 @@ def interactive_shell(r_pool: RunspacePool) -> None:
             if not command:
                 continue
 
-            command = command.strip()  # Remove leading/trailing whitespace
-            command_lower = command.lower()
+            # Normalize command input
+            command_lower = str(command).strip().lower()
 
             # Check for exit command
             if command_lower == "exit":
@@ -743,6 +1197,20 @@ def interactive_shell(r_pool: RunspacePool) -> None:
                 log.info("Displaying menu.")
                 show_menu()
                 continue
+            elif command_lower == "services":
+                log.info("Displaying services.")
+                get_services_command = (
+                    "Get-ItemProperty 'Registry::HKLM\System\CurrentControlSet\Services\*' -ErrorAction "
+                    "SilentlyContinue | Where-Object { $_.ImagePath -and ($_.ImagePath -notmatch 'system') } "
+                    "| Select-Object @{n='Service';e={$_.PSChildName}}, @{n='Path';e={$_.ImagePath}}"
+                )
+                services, streams, had_errors = run_ps_cmd(r_pool, get_services_command)
+                if not services:
+                    print(RED + "[-] Can not retrieve service information" + RESET)
+                    continue
+                print(services)
+                continue
+
             elif command_lower.startswith("download"):
                 command_parts = quoted_command_split(command)
                 if len(command_parts) < 3:
@@ -751,9 +1219,9 @@ def interactive_shell(r_pool: RunspacePool) -> None:
                     )
                     continue
                 remote_path = command_parts[1].strip('"')
-                local_path = command_parts[2].strip('"')
+                local_path = command_parts[2].strip('"').strip("'")
 
-                remote_file, streams, had_errors = run_ps(
+                remote_file, streams, had_errors = run_ps_cmd(
                     r_pool, f"(Resolve-Path -Path '{remote_path}').Path"
                 )
                 if not remote_file:
@@ -766,10 +1234,14 @@ def interactive_shell(r_pool: RunspacePool) -> None:
 
                 file_name = remote_file.split("\\")[-1]
 
-                if Path(local_path).is_dir() or local_path.endswith(os.sep):
-                    local_path = Path(local_path).resolve().joinpath(file_name)
+                if Path(local_path).expanduser().is_dir() or local_path.endswith(
+                    os.sep
+                ):
+                    local_path = (
+                        Path(local_path).expanduser().resolve().joinpath(file_name)
+                    )
                 else:
-                    local_path = Path(local_path).resolve()
+                    local_path = Path(local_path).expanduser().resolve()
 
                 download_file(r_pool, remote_file, str(local_path))
                 continue
@@ -778,10 +1250,10 @@ def interactive_shell(r_pool: RunspacePool) -> None:
                 if len(command_parts) < 3:
                     print(RED + "[-] Usage: upload <local_path> <remote_path>" + RESET)
                     continue
-                local_path = command_parts[1].strip('"')
+                local_path = command_parts[1].strip('"').strip("'")
                 remote_path = command_parts[2].strip('"')
 
-                if not Path(local_path).exists():
+                if not Path(local_path).expanduser().exists():
                     print(
                         RED + f"[-] Local file '{local_path}' does not exist." + RESET
                     )
@@ -791,7 +1263,7 @@ def interactive_shell(r_pool: RunspacePool) -> None:
 
                 if not re.match(r"^[a-zA-Z]:", remote_path):
                     # If the path doesn't start with a drive letter, prepend the current directory
-                    pwd, streams, had_errors = run_ps(r_pool, "$pwd.Path")
+                    pwd, streams, had_errors = run_ps_cmd(r_pool, "$pwd.Path")
                     if remote_path == ".":
                         remote_path = f"{pwd}\\{file_name}"
                     else:
@@ -800,7 +1272,106 @@ def interactive_shell(r_pool: RunspacePool) -> None:
                 if remote_path.endswith("\\"):
                     remote_path = f"{remote_path}{file_name}"
 
-                upload_file(r_pool, str(Path(local_path).resolve()), remote_path)
+                upload_file(
+                    r_pool, str(Path(local_path).expanduser().resolve()), remote_path
+                )
+                continue
+            elif command_lower.startswith("loadps"):
+                command_parts = quoted_command_split(command)
+                if len(command_parts) < 2:
+                    print(RED + "[-] Usage: loadps <local_path>" + RESET)
+                    continue
+                local_path = command_parts[1].strip('"')
+                local_path = Path(local_path).expanduser().resolve()
+
+                if not local_path.exists():
+                    print(
+                        RED
+                        + f"[-] Local PowerShell script '{local_path}' does not exist."
+                        + RESET
+                    )
+                    continue
+                elif local_path.suffix.lower() != ".ps1":
+                    print(
+                        RED
+                        + "[-] Please provide a valid PowerShell script file with .ps1 extension."
+                        + RESET
+                    )
+                    continue
+
+                load_ps(r_pool, local_path)
+                continue
+            elif command_lower.startswith("runps"):
+                command_parts = quoted_command_split(command)
+                if len(command_parts) < 2:
+                    print(RED + "[-] Usage: runps <local_path>" + RESET)
+                    continue
+                local_path = command_parts[1].strip('"')
+                local_path = Path(local_path).expanduser().resolve()
+
+                if not local_path.exists():
+                    print(
+                        RED
+                        + f"[-] Local PowerShell script '{local_path}' does not exist."
+                        + RESET
+                    )
+                    continue
+                elif local_path.suffix.lower() != ".ps1":
+                    print(
+                        RED
+                        + "[-] Please provide a valid PowerShell script file with .ps1 extension."
+                        + RESET
+                    )
+                    continue
+
+                run_ps(r_pool, local_path)
+                continue
+            elif command_lower.startswith("loaddll"):
+                command_parts = quoted_command_split(command)
+                if len(command_parts) < 2:
+                    print(RED + "[-] Usage: loaddll <local_path>" + RESET)
+                    continue
+                local_path = command_parts[1].strip('"')
+                local_path = Path(local_path).expanduser().resolve()
+
+                if not local_path.exists():
+                    print(RED + f"[-] Local dll '{local_path}' does not exist." + RESET)
+                    continue
+                elif local_path.suffix.lower() != ".dll":
+                    print(
+                        RED
+                        + "[-] Please provide a valid dll file with .dll extension."
+                        + RESET
+                    )
+                    continue
+                load_dll(r_pool, local_path)
+                continue
+            elif command_lower.startswith("runexe"):
+                command_parts = quoted_command_split(command)
+                if len(command_parts) < 2:
+                    print(RED + "[-] Usage: runexe <local_path> [args]" + RESET)
+                    continue
+                local_path = command_parts[1].strip('"')
+                local_path = Path(local_path).expanduser().resolve()
+
+                if not local_path.exists():
+                    print(
+                        RED
+                        + f"[-] Local executable '{local_path}' does not exist."
+                        + RESET
+                    )
+                    continue
+                elif local_path.suffix.lower() != ".exe":
+                    print(
+                        RED
+                        + "[-] Please provide a valid executable file with .exe extension."
+                        + RESET
+                    )
+                    continue
+
+                args = " ".join(command_parts[2:]) if len(command_parts) > 2 else ""
+
+                run_exe(r_pool, local_path, args)
                 continue
             else:
                 try:
@@ -814,8 +1385,6 @@ def interactive_shell(r_pool: RunspacePool) -> None:
                     while ps.state == PSInvocationState.RUNNING:
                         with DelayedKeyboardInterrupt():
                             ps.poll_invoke()
-                            global LAST_RUN_AT
-                            LAST_RUN_AT = int(time.time())
                         output = ps.output
                         for line in output[cursor:]:
                             print(line)
@@ -845,14 +1414,19 @@ def interactive_shell(r_pool: RunspacePool) -> None:
 # --- Main Function ---
 def main():
     print(
-        """        ▘▜      ▘             
-    █▌▌▌▌▐ ▄▖▌▌▌▌▛▌▛▘▛▛▌▄▖▛▌▌▌
-    ▙▖▚▘▌▐▖  ▚▚▘▌▌▌▌ ▌▌▌  ▙▌▙▌
-                          ▌ ▄▌ v{}""".format(
+        """          _ _            _                             
+  _____ _(_| |_____ __ _(_)_ _  _ _ _ __ ___ _ __ _  _ 
+ / -_\\ V | | |___\\ V  V | | ' \\| '_| '  |___| '_ | || |
+ \\___|\\_/|_|_|    \\_/\\_/|_|_||_|_| |_|_|_|  | .__/\\_, |
+                                            |_|   |__/  v{}\n""".format(
             __version__
         )
     )
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        epilog="For more information about this project, visit https://github.com/adityatelange/evil-winrm-py"
+        "\nFor user guide, visit https://github.com/adityatelange/evil-winrm-py/blob/main/docs/usage.md",
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
 
     parser.add_argument(
         "-i",
@@ -860,24 +1434,9 @@ def main():
         required=True,
         help="remote host IP or hostname",
     )
-    parser.add_argument("-u", "--user", required=True, help="username")
+    parser.add_argument("-u", "--user", help="username")
     parser.add_argument("-p", "--password", help="password")
     parser.add_argument("-H", "--hash", help="nthash")
-    parser.add_argument(
-        "--no-pass", action="store_true", help="do not prompt for password"
-    )
-    if is_kerb_available:
-        parser.add_argument(
-            "-k", "--kerberos", action="store_true", help="use kerberos authentication"
-        )
-        parser.add_argument(
-            "--spn-prefix",
-            help="specify spn prefix",
-        )
-        parser.add_argument(
-            "--spn-hostname",
-            help="specify spn hostname",
-        )
     parser.add_argument(
         "--priv-key-pem",
         help="local path to private key PEM file",
@@ -887,10 +1446,30 @@ def main():
         help="local path to certificate PEM file",
     )
     parser.add_argument("--uri", default="wsman", help="wsman URI (default: /wsman)")
-    parser.add_argument("--ssl", action="store_true", help="use ssl")
+    parser.add_argument(
+        "--ua",
+        default="Microsoft WinRM Client",
+        help='user agent for the WinRM client (default: "Microsoft WinRM Client")',
+    )
     parser.add_argument(
         "--port", type=int, default=5985, help="remote host port (default 5985)"
     )
+    if is_kerb_available:
+        parser.add_argument(
+            "--spn-prefix",
+            help="specify spn prefix",
+        )
+        parser.add_argument(
+            "--spn-hostname",
+            help="specify spn hostname",
+        )
+        parser.add_argument(
+            "-k", "--kerberos", action="store_true", help="use kerberos authentication"
+        )
+    parser.add_argument(
+        "--no-pass", action="store_true", help="do not prompt for password"
+    )
+    parser.add_argument("--ssl", action="store_true", help="use ssl")
     parser.add_argument("--log", action="store_true", help="log session to file")
     parser.add_argument("--debug", action="store_true", help="enable debug logging")
     parser.add_argument("--no-colors", action="store_true", help="disable colors")
@@ -903,27 +1482,12 @@ def main():
     # Set Default values
     auth = "ntlm"  # this can be 'negotiate'
     encryption = "auto"
+    username = args.user
 
     # --- Run checks on provided arguments ---
     if args.no_colors:
         global RESET, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, BOLD
         RESET = RED = GREEN = YELLOW = BLUE = MAGENTA = CYAN = BOLD = ""
-
-    if is_kerb_available:
-        if args.kerberos:
-            auth = "kerberos"
-            # User needs to set environment variables `KRB5CCNAME` and `KRB5_CONFIG` as per requirements
-            # example: export KRB5CCNAME=/tmp/krb5cc_1000
-            # example: export KRB5_CONFIG=/etc/krb5.conf
-        elif args.spn_prefix or args.spn_hostname:
-            args.spn_prefix = args.spn_hostname = None  # Reset to None
-            print(
-                MAGENTA
-                + "[%] SPN prefix/hostname is only used with Kerberos authentication."
-                + RESET
-            )
-    else:
-        args.spn_prefix = args.spn_hostname = None
 
     if args.cert_pem or args.priv_key_pem:
         auth = "certificate"
@@ -950,13 +1514,6 @@ def main():
             print(RED + "[-] Invalid NTLM hash format." + RESET)
             sys.exit(1)
 
-    if args.no_pass:
-        args.password = None
-    elif not args.password:
-        args.password = prompt("Password: ", is_password=True)
-        if not args.password:
-            args.password = None
-
     if args.uri:
         if args.uri.startswith("/"):
             args.uri = args.uri.lstrip("/")
@@ -970,32 +1527,92 @@ def main():
         if args.debug:
             print(BLUE + "[*] Debug logging enabled." + RESET)
             level = logging.DEBUG
+            os.environ["KRB5_TRACE"] = str(LOG_PATH)  # Enable Kerberos trace logging
         else:
             # Disable all loggers except the root logger
             for name in logging.root.manager.loggerDict:
                 if not name.startswith("evil_winrm_py"):
                     logging.getLogger(name).disabled = True
         # Set up logging to a file
-        logging.basicConfig(
-            level=level,
-            format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
-            filename=LOG_PATH,
-        )
-        print(BLUE + "[*] Logging session to {}".format(LOG_PATH) + RESET)
+        try:
+            logging.basicConfig(
+                level=level,
+                format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
+                filename=LOG_PATH,
+            )
+            print(BLUE + "[*] Logging session to {}".format(LOG_PATH) + RESET)
+        except PermissionError as pe:
+            print(
+                RED + "[-] Permission denied to write to log file '{}'."
+                " Please check the permissions or run with elevated privileges.".format(
+                    LOG_PATH
+                )
+                + RESET
+            )
+            log.disabled = True
     else:
         log.disabled = True
 
     # --- Initialize WinRM Session ---
     log.info("--- Evil-WinRM-Py v{} started ---".format(__version__))
     try:
-        log.info("Connecting to {}:{} as {}".format(args.ip, args.port, args.user))
-        print(
-            BLUE
-            + "[*] Connecting to {}:{} as {}".format(args.ip, args.port, args.user)
-            + RESET
-        )
+        if is_kerb_available:
+            if args.kerberos:
+                auth = "kerberos"
+                args.spn_prefix = (
+                    args.spn_prefix or "http"
+                )  # can also be cifs, ldap, HOST
+                if not args.user:
+                    try:
+                        cred = GSSAPICredentials(RawCreds())
+                        username = cred.name
+                    except MissingCredentialsError:
+                        print(
+                            MAGENTA
+                            + "[%] No credentials cache found for Kerberos authentication."
+                            + RESET
+                        )
+                        sys.exit(1)
+                    except ExpiredCredentialsError as ece:
+                        print(
+                            RED + "[-] The Kerberos credentials have expired. " + RESET
+                        )
+                        log.error("Expired credentials error: {}".format(ece))
+                        sys.exit(1)
+                # User needs to set environment variables `KRB5CCNAME` and `KRB5_CONFIG` as per requirements
+                # example: export KRB5CCNAME=/tmp/krb5cc_1000
+                # example: export KRB5_CONFIG=/etc/krb5.conf
+            elif args.spn_prefix or args.spn_hostname:
+                args.spn_prefix = args.spn_hostname = None  # Reset to None
+                print(
+                    MAGENTA
+                    + "[%] SPN prefix/hostname is only used with Kerberos authentication."
+                    + RESET
+                )
+        else:
+            args.spn_prefix = args.spn_hostname = None
 
-        with WSMan(
+        if args.no_pass:
+            args.password = None
+        elif args.user and not args.password:
+            args.password = prompt("Password: ", is_password=True)
+            if not args.password:
+                args.password = None
+
+        if username:
+            log.info(
+                "[*] Connecting to '{}:{}' as '{}'"
+                "".format(args.ip, args.port, username, auth)
+            )
+            print(
+                BLUE + "[*] Connecting to '{}:{}' as '{}'"
+                "".format(args.ip, args.port, username) + RESET
+            )
+        else:
+            log.info("[*] Connecting to '{}:{}'".format(args.ip, args.port))
+            print(BLUE + "[*] Connecting to '{}:{}'".format(args.ip, args.port) + RESET)
+
+        with WSManEWP(
             server=args.ip,
             port=args.port,
             auth=auth,
@@ -1009,37 +1626,43 @@ def main():
             negotiate_hostname_override=args.spn_hostname,
             certificate_key_pem=args.priv_key_pem,
             certificate_pem=args.cert_pem,
+            user_agent=args.ua,
         ) as wsman:
             with RunspacePool(wsman) as r_pool:
-                # Start the background thread to keep the RunspacePool alive
-                threading.Thread(
-                    target=keep_runspace_alive, args=(r_pool,), daemon=True
-                ).start()
-
-                # Open the interactive shell
                 interactive_shell(r_pool)
+    except (KeyboardInterrupt, EOFError):
+        sys.exit(0)
     except WinRMTransportError as wte:
-        print(RED + "[-] WinRM transport error: {}".format(wte) + RESET)
+        print(RED + "[-] {}".format(wte) + RESET)
         log.error("WinRM transport error: {}".format(wte))
         sys.exit(1)
-    except requests.exceptions.ConnectionError as ce:
-        print(RED + "[-] Connection error: {}".format(ce) + RESET)
+    except ConnectionError as ce:
+        print(
+            RED + "[-] Failed to connect to the remote host: {}:{}"
+            "".format(args.ip, args.port) + RESET
+        )
         log.error("Connection error: {}".format(ce))
         sys.exit(1)
     except AuthenticationError as ae:
-        print(RED + "[-] Authentication failed: {}".format(ae) + RESET)
+        print(RED + "[-] {}".format(ae) + RESET)
         log.error("Authentication failed: {}".format(ae))
         sys.exit(1)
     except WSManFaultError as wfe:
-        print(RED + "[-] WSMan fault error: {}".format(wfe) + RESET)
+        print(RED + "[-] {}".format(wfe) + RESET)
         log.error("WSMan fault error: {}".format(wfe))
         sys.exit(1)
     except Krb5Error as ke:
-        print(RED + "[-] Kerberos error: {}".format(ke) + RESET)
+        print(RED + "[-] {}".format(ke) + RESET)
         log.error("Kerberos error: {}".format(ke))
         sys.exit(1)
     except (OperationNotAvailableError, NoCredentialError) as se:
-        print(RED + "[-] SpnegoError error: {}".format(se) + RESET)
+        print(RED + "[-] {}".format(se._context_message) + RESET)
+        print(RED + "[-] {}".format(se._BASE_MESSAGE) + RESET)
+        log.error("SpnegoError error: {}".format(se))
+        sys.exit(1)
+    except SpnegoError as se:
+        print(RED + "[-] {}".format(se._context_message) + RESET)
+        print(RED + "[-] {}".format(se.message) + RESET)
         log.error("SpnegoError error: {}".format(se))
         sys.exit(1)
     except Exception as e:
