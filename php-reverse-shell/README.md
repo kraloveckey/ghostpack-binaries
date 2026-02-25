@@ -126,10 +126,10 @@ exploit
 
 ## Images
 
-<p align="center"><img src="https://github.com/kraloveckey/ghostpack-binaries/blob/master/php-reverse-shell/img/ncat.png" alt="Ncat"></p>
+<p align="center"><img src="./img/ncat.png" alt="Ncat"></p>
 
 <p align="center">Figure 1 - Ncat</p>
 
-<p align="center"><img src="https://github.com/kraloveckey/ghostpack-binaries/blob/master/php-reverse-shell/img/scripts_dump.jpg" alt="Script Dump"></p>
+<p align="center"><img src="./img/scripts_dump.jpg" alt="Script Dump"></p>
 
 <p align="center">Figure 2 - Script's Dump</p>
